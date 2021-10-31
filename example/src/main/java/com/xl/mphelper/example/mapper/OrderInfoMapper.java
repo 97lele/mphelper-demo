@@ -11,6 +11,8 @@ import com.xl.mphelper.example.entity.OrderInfo;
 import com.xl.mphelper.example.shards.CommonStrategy;
 import com.xl.mphelper.mapper.CustomMapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.cursor.Cursor;
 
 import java.util.List;
 
@@ -30,4 +32,8 @@ public interface OrderInfoMapper extends CustomMapper<OrderInfo> {
 
 
     Page<OrderInfo> testLeftJoin(IPage page, @TableShardParam String month);
+
+    @TableShardIgnore
+    @Select("select * from order_info where update_time is null")
+    Cursor<OrderInfo> test();
 }

@@ -2,7 +2,6 @@ package com.xl.mphelper.example.service.impl;
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
@@ -12,13 +11,11 @@ import com.xl.mphelper.example.entity.OrderInfo;
 import com.xl.mphelper.example.mapper.OrderDetailMapper;
 import com.xl.mphelper.example.mapper.OrderInfoMapper;
 import com.xl.mphelper.example.service.IOrderService;
-import com.xl.mphelper.example.utils.SnowFlowIds;
+import com.xl.mphelper.example.utils.SnowflakeIds;
 import com.xl.mphelper.service.CustomServiceImpl;
 import com.xl.mphelper.shard.TableShardHolder;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -48,13 +45,13 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
         orderInfo.setUserId(1L);
         orderInfo.setTotalAmount(BigDecimal.valueOf(10));
         orderInfo.setCreateTime(LocalDateTime.now());
-        orderInfo.setOrderId(SnowFlowIds.generate());
+        orderInfo.setOrderId(SnowflakeIds.generate());
         param.add(orderInfo);
         OrderInfo orderInfo2 = new OrderInfo();
         orderInfo2.setUserId(1L);
         orderInfo2.setTotalAmount(BigDecimal.valueOf(11));
         orderInfo2.setCreateTime(LocalDateTime.now());
-        orderInfo2.setOrderId(SnowFlowIds.generate());
+        orderInfo2.setOrderId(SnowflakeIds.generate());
         param.add(orderInfo2);
         orderInfoMapper.insertBatch(param);
         List<OrderInfo> infos = orderInfoMapper.selectList(Wrappers.lambdaQuery());
@@ -68,7 +65,7 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
         infos.add(orderInfo21);
         LambdaQueryWrapper<OrderInfo> queryWrapper = Wrappers.lambdaQuery(OrderInfo.class)
                 .eq(OrderInfo::getUserId, 1);
-        saveBatchPlus(infos, queryWrapper, e -> e.setOrderId(SnowFlowIds.generate()));
+        saveBatchPlus(infos, queryWrapper, e -> e.setOrderId(SnowflakeIds.generate()));
         TableShardHolder.resetIgnore();
     }
 
@@ -83,12 +80,12 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
             List<OrderInfo> value = entry.getValue();
             List<OrderDetail> addList = new ArrayList<>(1000);
             for (OrderInfo order : value) {
-                long orderId = SnowFlowIds.generate();
+                long orderId = SnowflakeIds.generate();
                 order.setOrderId(orderId);
                 List<OrderDetail> detailList = order.getDetailList();
                 for (OrderDetail orderDetail : detailList) {
                     orderDetail.setOrderId(orderId);
-                    orderDetail.setDetailId(SnowFlowIds.generate());
+                    orderDetail.setDetailId(SnowflakeIds.generate());
                     addList.add(orderDetail);
                 }
             }

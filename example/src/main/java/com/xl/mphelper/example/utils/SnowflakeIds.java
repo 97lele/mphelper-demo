@@ -1,6 +1,6 @@
 package com.xl.mphelper.example.utils;
 
-public class SnowFlowIds {
+public class SnowflakeIds {
 
     /**
      * 起始的时间戳
@@ -65,7 +65,7 @@ public class SnowFlowIds {
         return machineId;
     }
 
-    public SnowFlowIds(long datacenterId, long machineId) {
+    public SnowflakeIds(long datacenterId, long machineId) {
         if (datacenterId > MAX_DATACENTER_NUM || datacenterId < 0) {
             throw new IllegalArgumentException("datacenterId can't be greater than MAX_DATACENTER_NUM or less than 0");
         }
@@ -122,7 +122,7 @@ public class SnowFlowIds {
     private static final long DEFAULT_DATA_CENTER_ID = System.getProperty("gen_data_center_id") != null ? Long.valueOf(System.getProperty("gen_data_center_id")) : 0;
     private static final long DEFAULT_MACHINE_ID = System.getProperty("gen_machine_id") != null ? Long.valueOf(System.getProperty("gen_machine_id")) > 7 ? 3 : Long.valueOf(System.getProperty("gen_machine_id")) : 0;
 
-    private static SnowFlowIds snowFlowIds;
+    private static SnowflakeIds snowflakeIds;
 
     /**
      * ID生成
@@ -130,10 +130,10 @@ public class SnowFlowIds {
      * @return
      */
     public static long generate() {
-        if (null == snowFlowIds) {
-            snowFlowIds = new SnowFlowIds(DEFAULT_DATA_CENTER_ID, DEFAULT_MACHINE_ID);
+        if (null == snowflakeIds) {
+            snowflakeIds = new SnowflakeIds(DEFAULT_DATA_CENTER_ID, DEFAULT_MACHINE_ID);
         }
-        return snowFlowIds.nextId();
+        return snowflakeIds.nextId();
     }
 
 }

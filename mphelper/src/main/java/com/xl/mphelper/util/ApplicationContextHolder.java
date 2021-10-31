@@ -1,4 +1,5 @@
 package com.xl.mphelper.util;
+
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -8,6 +9,7 @@ import sun.reflect.ReflectionFactory;
 
 import java.lang.reflect.Constructor;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 /**
  * @author tanjl11
@@ -16,9 +18,7 @@ import java.security.AccessController;
 @Component
 public class ApplicationContextHolder implements ApplicationContextAware {
     public static ApplicationContext context;
-    private static final ReflectionFactory reflectionFactory =
-            AccessController.doPrivileged(
-                    new ReflectionFactory.GetReflectionFactoryAction());
+    private static final ReflectionFactory delegat = ReflectionFactory.getReflectionFactory();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -31,7 +31,7 @@ public class ApplicationContextHolder implements ApplicationContextAware {
             try {
                 Constructor<?> classConstructor = invokeClass.getConstructor();
                 //因为调用的是方法，无需调用构造函数、初始化代码
-                Constructor<?> constructor = reflectionFactory.newConstructorForSerialization(invokeClass, classConstructor);
+                Constructor<?> constructor = delegat.newConstructorForSerialization(invokeClass);
                 ReflectionUtils.makeAccessible(constructor);
                 return (T) constructor.newInstance();
             } catch (Exception m) {

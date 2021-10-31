@@ -10,6 +10,7 @@
     <modules>
         <module>mphelper</module>
         <module>example</module>
+        <module>sharding-jdbc-demo</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -18,7 +19,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <mybatis-plus.version>3.4.1</mybatis-plus.version>
         <mysql.connector.version>5.1.48</mysql.connector.version>
-        <springboot.version>2.3.0.RELEASE</springboot.version>
+        <spring-boot.version>2.3.0.RELEASE</spring-boot.version>
         <druid.version>1.2.6</druid.version>
     </properties>
 
@@ -27,7 +28,7 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
-                <version>${springboot.version}</version>
+                <version>${spring-boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>mysql</groupId>
@@ -73,6 +74,27 @@
                 <artifactId>transmittable-thread-local</artifactId>
                 <version>2.12.1</version>
             </dependency>
+            <!-- https://mvnrepository.com/artifact/org.apache.shardingsphere/sharding-jdbc-core -->
+            <dependency>
+                <groupId>org.apache.shardingsphere</groupId>
+                <artifactId>shardingsphere-jdbc-core-spring-boot-starter</artifactId>
+                <version>5.0.0-alpha</version>
+            </dependency>
+            <dependency>
+                <!-- Import dependency management from Spring Boot,not include plugin
+                    management as the parent import style -->
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
     <repositories>
