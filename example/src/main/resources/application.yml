@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: mphelper-demo
+mphelper:
+  shard-support: true
+  dynamic:
+    enable: true
+    defaultSource: LOCAL
+    datasources:
+      LOCAL:
+        url: jdbc:mysql://localhost:3306/demo?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=Asia/Shanghai
+        username: root
+        password: 123456
+        testWhileIdle: true
+logging:
+  level:
+    root: info
+    com.xl: debug
