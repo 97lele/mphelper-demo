@@ -7,19 +7,18 @@ import org.apache.shardingsphere.sharding.api.sharding.standard.StandardSharding
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Properties;
 
 @Slf4j
 public class LocalDateShardAlgorithm implements StandardShardingAlgorithm<LocalDateTime> {
 
-    private String range;
-
-    private Properties props = new Properties();
-
     @Override
     public String doSharding(Collection<String> availableTargetNames, PreciseShardingValue<LocalDateTime> shardingValue) {
-        log.info("可用表名{}", availableTargetNames);
-        return availableTargetNames.stream().findFirst().get();
+        LocalDateTime value = shardingValue.getValue();
+        String s = availableTargetNames.stream()
+                .filter(e -> e.contains(value.getYear() + "_" + value.getMonth().getValue()))
+                .findFirst().orElse(availableTargetNames.iterator().next());
+        log.info("选取的表名{}", s);
+        return s;
     }
 
     @Override
@@ -34,16 +33,7 @@ public class LocalDateShardAlgorithm implements StandardShardingAlgorithm<LocalD
 
     @Override
     public String getType() {
-        return "LOCAL_DATE";
+        return "CLASS_BASED";
     }
 
-    @Override
-    public Properties getProps() {
-        return props;
-    }
-
-    @Override
-    public void setProps(Properties props) {
-        log.info("配置文件{}", props);
-    }
 }

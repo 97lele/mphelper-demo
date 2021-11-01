@@ -19,7 +19,7 @@
     <dependencies>
         <dependency>
             <groupId>com.alibaba</groupId>
-            <artifactId>druid-spring-boot-starter</artifactId>
+            <artifactId>druid</artifactId>
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
