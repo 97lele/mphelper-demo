@@ -1,4 +1,4 @@
-package com.xl.mphelper.example.utils;
+package com.xl.mphelper.util;
 
 public class SnowflakeIds {
 

@@ -15,14 +15,17 @@ import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xl.mphelper.mapper.CustomMapper;
 import com.xl.mphelper.util.ApplicationContextHolder;
+import com.xl.mphelper.util.SnowflakeIds;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -44,13 +47,13 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
     private final WrapperHelper helper = new WrapperHelper();
 
     @Transactional(rollbackFor = Exception.class)
-    public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper,Consumer<T> doWithAdd) {
-        return saveBatchPlus(entity, () -> list(queryWrapper),doWithAdd);
+    public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Consumer<T> doWithAdd) {
+        return saveBatchPlus(entity, () -> list(queryWrapper), doWithAdd);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper) {
-        return saveBatchPlus(entity, () -> list(queryWrapper),null);
+        return saveBatchPlus(entity, () -> list(queryWrapper), null);
     }
 
     /**
@@ -60,7 +63,7 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
      * @return
      */
     @Transactional(rollbackFor = Exception.class)
-    public int saveBatchPlus(Collection<T> entity, Supplier<Collection<T>> getExistsData,Consumer<T> doWithAdd) {
+    public int saveBatchPlus(Collection<T> entity, Supplier<Collection<T>> getExistsData, Consumer<T> doWithAdd) {
         String keyProperty = getKeyPropertyFromLists(entity);
         boolean deleteAll = false;
         Collection<T> list = getExistsData.get();
@@ -90,8 +93,14 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
                 updateList.add(t);
                 existsIds.remove(idVal);
             } else {
-                if(doWithAdd!=null){
+                if (doWithAdd != null) {
                     doWithAdd.accept(t);
+                } else {
+                    Field field = ReflectionUtils.findField(t.getClass(), keyProperty);
+                    if(Objects.nonNull(field)){
+                        ReflectionUtils.makeAccessible(field);
+                        ReflectionUtils.setField(field, t, SnowflakeIds.generate());
+                    }
                 }
                 addList.add(t);
             }
