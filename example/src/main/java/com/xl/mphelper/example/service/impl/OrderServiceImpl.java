@@ -11,9 +11,9 @@ import com.xl.mphelper.example.entity.OrderInfo;
 import com.xl.mphelper.example.mapper.OrderDetailMapper;
 import com.xl.mphelper.example.mapper.OrderInfoMapper;
 import com.xl.mphelper.example.service.IOrderService;
-import com.xl.mphelper.example.utils.SnowflakeIds;
 import com.xl.mphelper.service.CustomServiceImpl;
 import com.xl.mphelper.shard.TableShardHolder;
+import com.xl.mphelper.util.SnowflakeIds;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
