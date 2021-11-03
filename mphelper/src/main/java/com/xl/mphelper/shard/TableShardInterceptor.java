@@ -63,7 +63,6 @@ public class TableShardInterceptor implements Interceptor {
     private static final Map<String, Class> MAPPER_CLASS_CACHE = new ConcurrentHashMap<>();
     private static final Map<Class, ITableShardStrategy> SHARD_STRATEGY = new ConcurrentHashMap<>();
     private static final Map<Class, ITableShardDbType> SHARD_DB = new ConcurrentHashMap<>();
-    private static final Map<DbType, SchemaStatVisitor> SCHEMA_MAP = new ConcurrentHashMap<>();
 
     private static final Set<String> HANDLED_TABLE = new ConcurrentSkipListSet<>();
 
@@ -86,6 +85,10 @@ public class TableShardInterceptor implements Interceptor {
             return invocation.proceed();
         }
         TableShard annotation = mapperClass.getAnnotation(TableShard.class);
+        ExecBaseMethod.MethodInfo curMethod = getExecMethod(mappedStatement, mapperClass, annotation);
+        if (curMethod.shouldIgnore) {
+            return invocation.proceed();
+        }
         Set<String> tableNames = getTableNames(boundSql, annotation);
         Map<String, String> routingTableMap = new HashMap<>(tableNames.size());
         if (TableShardHolder.hasVal()) {
@@ -94,11 +97,13 @@ public class TableShardInterceptor implements Interceptor {
                     routingTableMap.put(tableName, TableShardHolder.getReplaceName(tableName));
                 }
             }
-            replaceSql(metaObject, boundSql, routingTableMap);
-            return invocation.proceed();
         }
-        ExecBaseMethod.MethodInfo curMethod = getExecMethod(mappedStatement, mapperClass, annotation);
-        if (curMethod.shouldIgnore) {
+        if (annotation.enableCreateTable()) {
+            //默认是用执行的mapper进行表新建
+            handleTableCreate(invocation, metaObject, mapperClass, routingTableMap, annotation);
+        }
+        if(TableShardHolder.hasVal()){
+            replaceSql(metaObject, boundSql, routingTableMap);
             return invocation.proceed();
         }
         Class<? extends ITableShardStrategy> shardStrategy = annotation.shardStrategy();
@@ -118,10 +123,6 @@ public class TableShardInterceptor implements Interceptor {
             }
             resName = strategy.routingTable(tableName, objFromCurMethod);
             routingTableMap.put(tableName, resName);
-        }
-        if (annotation.enableCreateTable()) {
-            //默认是用执行的mapper进行表新建
-            handleTableCreate(invocation, metaObject, mapperClass, routingTableMap, annotation);
         }
         //处理表sql
         replaceSql(metaObject, boundSql, routingTableMap);
@@ -252,7 +253,7 @@ public class TableShardInterceptor implements Interceptor {
         //获取sql语句
         String originSql = boundSql.getSql();
         DbType dbType = iTableShardDb.getDbType();
-        SchemaStatVisitor visitor = SCHEMA_MAP.computeIfAbsent(dbType, SQLUtils::createSchemaStatVisitor);
+        SchemaStatVisitor visitor = SQLUtils.createSchemaStatVisitor(dbType);
         List<SQLStatement> stmtList = SQLUtils.parseStatements(originSql, dbType);
         Set<String> tableNames = new HashSet<>();
         for (int i = 0; i < stmtList.size(); i++) {

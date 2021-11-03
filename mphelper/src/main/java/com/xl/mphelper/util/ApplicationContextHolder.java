@@ -10,6 +10,8 @@ import sun.reflect.ReflectionFactory;
 import java.lang.reflect.Constructor;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author tanjl11
@@ -19,6 +21,8 @@ import java.security.PrivilegedAction;
 public class ApplicationContextHolder implements ApplicationContextAware {
     public static ApplicationContext context;
     private static final ReflectionFactory delegat = ReflectionFactory.getReflectionFactory();
+    private static final Map<Class, Object> OBJECT_CLASS_CACHE = new ConcurrentHashMap<>();
+
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -28,15 +32,17 @@ public class ApplicationContextHolder implements ApplicationContextAware {
     public static <T> T getBeanOrInstance(Class<T> invokeClass) {
         T bean = getBean(invokeClass);
         if (bean == null) {
-            try {
-                Constructor<?> classConstructor = invokeClass.getConstructor();
-                //因为调用的是方法，无需调用构造函数、初始化代码
-                Constructor<?> constructor = delegat.newConstructorForSerialization(invokeClass);
-                ReflectionUtils.makeAccessible(constructor);
-                return (T) constructor.newInstance();
-            } catch (Exception m) {
-                throw new IllegalStateException(invokeClass + "没有默认的空构造器");
-            }
+            bean = (T) OBJECT_CLASS_CACHE.computeIfAbsent(invokeClass, k -> {
+                try {
+                    Constructor<?> classConstructor = invokeClass.getConstructor();
+                    //因为调用的是方法，无需调用构造函数、初始化代码
+                    Constructor<?> constructor = delegat.newConstructorForSerialization(k, classConstructor);
+                    ReflectionUtils.makeAccessible(constructor);
+                    return (T) constructor.newInstance();
+                } catch (Exception m) {
+                    throw new IllegalStateException(invokeClass + "没有默认的空构造器");
+                }
+            });
         }
         return bean;
     }
