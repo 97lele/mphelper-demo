@@ -2,6 +2,7 @@ package com.xl.shardingjdbc.demo.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xl.mphelper.mapper.CustomMapper;
 import com.xl.shardingjdbc.demo.entity.OrderDetail;
 
 /**
@@ -12,6 +13,6 @@ import com.xl.shardingjdbc.demo.entity.OrderDetail;
  * @author lele
  * @since 2021-10-27
  */
-public interface OrderDetailMapper extends BaseMapper<OrderDetail> {
+public interface OrderDetailMapper extends CustomMapper<OrderDetail> {
     void createTable();
 }

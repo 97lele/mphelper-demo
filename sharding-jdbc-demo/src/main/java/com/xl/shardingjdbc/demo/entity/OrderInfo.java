@@ -87,13 +87,16 @@ public class OrderInfo implements Serializable {
         ThreadLocalRandom current = ThreadLocalRandom.current();
         LocalDateTime createTime = LocalDateTime.now().plusMonths(current.nextLong(-3,3));
         orderInfo.setCreateTime(createTime);
-        orderInfo.setUserId(current.nextLong(1000000));
+        long userId = current.nextLong(1000000);
+        orderInfo.setUserId(userId);
         String userName = UUID.randomUUID().toString();
         orderInfo.setUserName(userName.substring(0, current.nextInt(userName.length())));
         int i = current.nextInt(current.nextInt(1, 10));
         List<OrderDetail> detailList = new ArrayList<>(i);
         for (int j = 0; j < i; j++) {
-            detailList.add(OrderDetail.randomData(createTime));
+            OrderDetail orderDetail = OrderDetail.randomData(createTime);
+            orderDetail.setUserId(orderInfo.getUserId());
+            detailList.add(orderDetail);
         }
         orderInfo.detailList = detailList;
         orderInfo.calculateTotal();

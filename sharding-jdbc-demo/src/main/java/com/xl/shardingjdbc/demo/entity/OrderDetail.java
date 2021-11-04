@@ -68,7 +68,8 @@ public class OrderDetail implements Serializable {
     @TableField("update_time")
     private LocalDateTime updateTime;
 
-
+    @TableField("user_id")
+    private Long userId;
 
     public static OrderDetail randomData(LocalDateTime time) {
         OrderDetail detail = new OrderDetail();
