@@ -28,6 +28,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
  * 1.指定列更新空值
  * 2.所有列更新空值
  * 一般场景用updateBatchById、updateById即可
+ * 添加保存方法，把更新、删除、新增的方法进行整合
  */
 @SuppressWarnings(value = {"unchecked", "rawtypes"})
 @Slf4j
@@ -46,28 +48,35 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
 
     private final WrapperHelper helper = new WrapperHelper();
 
-    @Transactional(rollbackFor = Exception.class)
-    public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Consumer<T> doWithAdd) {
-        return saveBatchPlus(entity, () -> list(queryWrapper), doWithAdd);
-    }
 
     @Transactional(rollbackFor = Exception.class)
     public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper) {
-        return saveBatchPlus(entity, () -> list(queryWrapper), null);
+        return saveBatchPlus(entity, () -> list(queryWrapper), null, null);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Function<T, ?> uniqueKey) {
+        return saveBatchPlus(entity, () -> list(queryWrapper), uniqueKey, null);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Function<T, ?> uniqueKey,Supplier<Serializable> idGenerator) {
+        return saveBatchPlus(entity, () -> list(queryWrapper), uniqueKey, idGenerator);
     }
 
     /**
-     * 批量保存，先判断有没有id，有的话为更新
-     *
-     * @param entity
+     * @param values        插入的项
+     * @param getExistsData 对比的数据范围
+     * @param uniqueKey     updateList赋值的操作，根据该项形成map，然后把对应的数据库ID赋值到符合的value
+     * @param idGenerator   ID生成的操作，没有默认是雪花
      * @return
      */
     @Transactional(rollbackFor = Exception.class)
-    public int saveBatchPlus(Collection<T> entity, Supplier<Collection<T>> getExistsData, Consumer<T> doWithAdd) {
-        String keyProperty = getKeyPropertyFromLists(entity);
+    public int saveBatchPlus(Collection<T> values, Supplier<Collection<T>> getExistsData, Function<T, ?> uniqueKey, Supplier<Serializable> idGenerator) {
+        String keyProperty = getKeyPropertyFromLists(values);
         boolean deleteAll = false;
         Collection<T> list = getExistsData.get();
-        if (CollectionUtils.isEmpty(entity)) {
+        if (CollectionUtils.isEmpty(values)) {
             keyProperty = getKeyPropertyFromLists(list);
             deleteAll = true;
         }
@@ -84,24 +93,28 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             removeByIds(existsIds);
             return existsIds.size();
         }
+        if (idGenerator == null) {
+            idGenerator = () -> SnowflakeIds.generate();
+        }
+        //赋值updateList
+        if (uniqueKey != null) {
+            Map<?, T> map = values.stream().collect(Collectors.toMap(uniqueKey, Function.identity(), (x1, x2) -> x1));
+            for (T t : values) {
+                T dataValue = map.get(uniqueKey.apply(t));
+                Serializable idVal = (Serializable) ReflectionKit.getFieldValue(dataValue, keyProperty);
+                setId(() -> idVal, keyProperty, t);
+            }
+        }
         //留下数据库存在的
-        List<T> updateList = new ArrayList<>(entity.size());
-        List<T> addList = new ArrayList<>(entity.size());
-        for (T t : entity) {
+        List<T> updateList = new ArrayList<>(values.size());
+        List<T> addList = new ArrayList<>(values.size());
+        for (T t : values) {
             Serializable idVal = (Serializable) ReflectionKit.getFieldValue(t, keyProperty);
             if (idVal != null) {
                 updateList.add(t);
                 existsIds.remove(idVal);
             } else {
-                if (doWithAdd != null) {
-                    doWithAdd.accept(t);
-                } else {
-                    Field field = ReflectionUtils.findField(t.getClass(), keyProperty);
-                    if(Objects.nonNull(field)){
-                        ReflectionUtils.makeAccessible(field);
-                        ReflectionUtils.setField(field, t, SnowflakeIds.generate());
-                    }
-                }
+                setId(idGenerator, keyProperty, t);
                 addList.add(t);
             }
         }
@@ -126,6 +139,14 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             }
         }
         return addList.size() + existsIds.size() + updateList.size();
+    }
+
+    private void setId(Supplier<Serializable> idGenerator, String keyProperty, T t) {
+        Field field = ReflectionUtils.findField(t.getClass(), keyProperty);
+        if (Objects.nonNull(field)) {
+            ReflectionUtils.makeAccessible(field);
+            ReflectionUtils.setField(field, t, idGenerator.get());
+        }
     }
 
     private String getKeyPropertyFromLists(Collection<T> list) {
