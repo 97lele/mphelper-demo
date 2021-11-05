@@ -56,7 +56,8 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
         orderInfoMapper.insertBatch(param);
         List<OrderInfo> infos = orderInfoMapper.selectList(Wrappers.lambdaQuery());
         //修改的
-        infos.get(0).setTotalAmount(BigDecimal.ONE);
+        OrderInfo updateInfo = infos.get(0);
+        updateInfo.setTotalAmount(BigDecimal.ONE);
         infos.remove(1);
         //新的
         OrderInfo orderInfo21 = orderInfo2;
@@ -65,7 +66,7 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
         infos.add(orderInfo21);
         LambdaQueryWrapper<OrderInfo> queryWrapper = Wrappers.lambdaQuery(OrderInfo.class)
                 .eq(OrderInfo::getUserId, 1);
-        saveBatchPlus(infos, queryWrapper, e -> e.setOrderId(SnowflakeIds.generate()));
+        saveBatchPlus(infos, queryWrapper);
         TableShardHolder.resetIgnore();
     }
 
