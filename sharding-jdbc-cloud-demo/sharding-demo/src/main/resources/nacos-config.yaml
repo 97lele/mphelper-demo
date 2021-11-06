@@ -1,0 +1,23 @@
+xxl:
+  job:
+    admin: { addresses: 'http://127.0.0.1:8080/xxl-job-admin' }
+    executor: { appname: sharding-demo, port: 9998 }
+spring:
+  shardingsphere:
+    rules:
+      sharding:
+        tables:
+          order_info:
+            key-generate-strategy: { column: order_id, key-generator-name: snowflake }
+            actual-data-nodes: demo.order_info_2021_10,demo.order_info_2021_9,demo.order_info_2021_11,demo.order_info_2021_8,demo.order_info_2021_12
+            table-strategy:
+              standard: { sharding-column: create_time, sharding-algorithm-name: localdate }
+        sharding-algorithms:
+          localdate:
+            type: CLASS_BASED
+            props: { strategy: STANDARD, algorithmClassName: com.xl.cloud.sharding.shard.LocalDateShardAlgorithm }
+    datasource:
+      name: demo
+      demo: { type: com.alibaba.druid.pool.DruidDataSource, driver-class-name: com.mysql.jdbc.Driver,
+              url: 'jdbc:mysql://localhost:3306/demo?serverTimezone=UTC&useSSL=false&useUnicode=true&characterEncoding=UTF-8',
+              username: root, password: 123456 }
