@@ -20,4 +20,6 @@ public @interface TableShardParam {
     Class<? extends ITableShardStrategy> shardStrategy() default ITableShardStrategy.TableShardDefaultStrategy.class;
 
     int hashTableLength() default -1;
+
+    boolean enableHash() default false;
 }

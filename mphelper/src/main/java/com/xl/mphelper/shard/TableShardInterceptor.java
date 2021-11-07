@@ -304,11 +304,13 @@ public class TableShardInterceptor implements Interceptor {
                 defaultParam = cur;
                 TableShardParam annotation = cur.getAnnotation(TableShardParam.class);
                 Class<? extends ITableShardStrategy> shardStrategy = annotation.shardStrategy();
-                if (isAutoHash) {
+                if (isAutoHash && annotation.enableHash()) {
+                    //如果支持hash
+                    shardStrategy = ITableShardStrategy.HashStrategy.class;
+                    //如果当前mapper为hash模式，并且对应的长度不为-1，设置长度
                     if (annotation.hashTableLength() != -1) {
                         TableShardHolder.hashTableLength(annotation.hashTableLength());
                     }
-                    shardStrategy = ITableShardStrategy.HashStrategy.class;
                 }
                 res = SHARD_STRATEGY.computeIfAbsent(shardStrategy, e -> (ITableShardStrategy) getObjectByClass(e));
                 break;

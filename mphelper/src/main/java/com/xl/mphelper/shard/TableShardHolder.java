@@ -27,11 +27,12 @@ public class TableShardHolder {
                 throw new IllegalStateException("conflict with ignore flag,try another table name");
             }
             //hash策略处理
+            String res = value + "_" + suffix;
             if (hashTableLength() != null) {
                 ITableShardStrategy tableShardStrategy = TableShardInterceptor.SHARD_STRATEGY.computeIfAbsent(ITableShardStrategy.HashStrategy.class, e -> (ITableShardStrategy) ApplicationContextHolder.getBeanOrInstance(e));
-                suffix = tableShardStrategy.routingTable(value, suffix);
+                res = tableShardStrategy.routingTable(value, suffix);
             }
-            HOLDER.get().put(value, value + "_" + suffix);
+            HOLDER.get().put(value, res);
         }
     }
 

@@ -23,12 +23,14 @@ public class MpHelperApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext run = SpringApplication.run(MpHelperApplication.class, args);
         OrderController controller = run.getBean(OrderController.class);
+        //测试mapper的新增方法方法
         List<OrderInfo> orderInfos = controller.testAdd();
         String suffix = orderInfos.get(0).suffix();
+        //测试查询方法
         Page<OrderInfo> orderInfoPage = controller.queryByPage(suffix);
-        log.info("分页查询{}", orderInfoPage.getRecords().size());
+        log.info("分页查询，长度：{}", orderInfoPage.getRecords().size());
         List<OrderInfo> query = controller.query(suffix);
-        log.info("查询所有{}", query.size());
+        log.info("查询所有，长度：{}", query.size());
         IOrderService service = run.getBean(IOrderService.class);
         //自定义service的crud操作
         service.testCustomServiceShardCUD();

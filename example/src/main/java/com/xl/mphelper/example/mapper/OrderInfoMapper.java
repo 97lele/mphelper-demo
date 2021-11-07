@@ -21,11 +21,13 @@ import java.util.List;
  * @since 2021-10-27
  */
 @TableShard(enableCreateTable = true, createTableMethod = "createTable")
-//@TableShard(enableCreateTable = true,createTableMethod = "createTable", hashTableLength = 10)
+//@TableShard(enableCreateTable = true, createTableMethod = "createTable", hashTableLength = 10)
 public interface OrderInfoMapper extends CustomMapper<OrderInfo> {
     void createTable();
 
-    List<OrderInfo> testLeftJoin2(@TableShardParam String month);
+    List<OrderInfo> testLeftJoin2(//@TableShardParam(enableHash = true)
+                                          @TableShardParam
+                                          String month);
 
 
     Page<OrderInfo> testLeftJoin(IPage page, @TableShardParam String month);
