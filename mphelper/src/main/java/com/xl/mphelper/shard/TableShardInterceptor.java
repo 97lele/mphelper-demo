@@ -155,6 +155,7 @@ public class TableShardInterceptor implements Interceptor {
         if (tableMethod.length() > 0) {
             createTableMethod = ReflectionUtils.findMethod(mapperClass, tableMethod);
         }
+        //把建表语句对应的sql进行表名的替换
         if (createTableMethod != null && !createTableMethod.isAnnotationPresent(TableShardIgnore.class)) {
             SqlSessionTemplate template = ApplicationContextHolder.getBean(SqlSessionTemplate.class);
             String methodPath = mapperClass.getName() + "." + tableMethod;
@@ -168,6 +169,7 @@ public class TableShardInterceptor implements Interceptor {
                     createTableSql = createTableSql.replaceAll(entry.getKey(), entry.getValue());
                 }
             }
+            //获取一个连接
             Connection conn = (Connection) invocation.getArgs()[0];
             boolean preAutoCommitState = conn.getAutoCommit();
             conn.setAutoCommit(false);
@@ -183,7 +185,7 @@ public class TableShardInterceptor implements Interceptor {
             }
             try (PreparedStatement countStmt = conn.prepareStatement(createTableSql)) {
                 countStmt.execute();
-                conn.commit();//执行完后，手动提交事务
+                conn.commit();
             } catch (Exception e) {
                 log.error("自动建表报错", e);
             } finally {
@@ -201,10 +203,9 @@ public class TableShardInterceptor implements Interceptor {
         }
 
         try (PreparedStatement checkTableExists = conn.prepareStatement(checkTableSql);) {
-            boolean preAutoCommitState = conn.getAutoCommit();
             conn.setAutoCommit(false);
             ResultSet resultSet = checkTableExists.executeQuery();
-            conn.setAutoCommit(preAutoCommitState);
+            conn.commit();
             //获取已有的表名,判断是否都已经有了这个表
             boolean hasAllTable = true;
             Set<String> resSet = new HashSet<>();

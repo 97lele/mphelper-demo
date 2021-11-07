@@ -1,6 +1,7 @@
 package com.xl.mphelper.shard;
 
 import com.alibaba.druid.DbType;
+import com.xl.mphelper.dynamic.DynamicDatasource;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -8,8 +9,9 @@ import java.util.Iterator;
 /**
  * @author tanjl11
  * @date 2021/10/18 16:57
- * 分库的可以直接用{@link com.midea.cloud.dynamicds.bind.CheckModuleHolder} 自己在业务层处理
- * 在{@link com.midea.cloud.dynamicds.datasource.DynamicDatasource#getConnection()}获取链接
+ * 简单的分库的可以直接用{@link com.xl.mphelper.dynamic.DynamicDataSourceHolder} 自己在业务层处理
+ * 在{@link DynamicDatasource#getConnection()}获取链接，如果用注解事务不能保证事务完整
+ * 可以在同一个数据源内，调{@link com.xl.mphelper.service.CustomServiceImpl#doInTransaction(Runnable)}来开启一个事务
  */
 public interface ITableShardDbType {
     /**
