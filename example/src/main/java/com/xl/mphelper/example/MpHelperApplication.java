@@ -31,7 +31,7 @@ public class MpHelperApplication {
         log.info("查询所有{}", query.size());
         IOrderService service = run.getBean(IOrderService.class);
         //自定义service的crud操作
-        service.testCustomServiceShardCRUD();
+        service.testCustomServiceShardCUD();
 
     }
 }

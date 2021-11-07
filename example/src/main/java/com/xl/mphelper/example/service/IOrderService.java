@@ -13,7 +13,7 @@ import java.util.List;
 public interface IOrderService {
     void saveOrders(Collection<OrderInfo> orders);
 
-    void testCustomServiceShardCRUD();
+    void testCustomServiceShardCUD();
 
     List<OrderInfo> queryAll(String month);
 

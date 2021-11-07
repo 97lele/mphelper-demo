@@ -71,7 +71,7 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
     }
 
     @Override
-    public void testCustomServiceShardCRUD() {
+    public void testCustomServiceShardCUD() {
         List<OrderInfo> orderInfos = OrderInfo.batchRandomData();
         List<OrderDetail> detailList = new ArrayList<>();
         for (OrderInfo orderInfo : orderInfos) {
