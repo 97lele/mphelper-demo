@@ -1,3 +1,4 @@
+
 spring:
   application:
     name: mphelper-demo
@@ -16,3 +17,5 @@ logging:
   level:
     root: info
     com.xl: debug
+server:
+  port: 1210

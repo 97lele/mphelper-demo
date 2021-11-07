@@ -12,14 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.binding.MapperMethod;
+import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.statement.RoutingStatementHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.plugin.Interceptor;
-import org.apache.ibatis.plugin.Intercepts;
-import org.apache.ibatis.plugin.Invocation;
-import org.apache.ibatis.plugin.Signature;
+import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.ReflectorFactory;
@@ -68,10 +66,6 @@ public class TableShardInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        //入口处进行处理
-        if (!(invocation.getTarget() instanceof RoutingStatementHandler)) {
-            return invocation.proceed();
-        }
         if (TableShardHolder.isIgnore()) {
             return invocation.proceed();
         }
@@ -85,10 +79,6 @@ public class TableShardInterceptor implements Interceptor {
             return invocation.proceed();
         }
         TableShard annotation = mapperClass.getAnnotation(TableShard.class);
-        ExecBaseMethod.MethodInfo curMethod = getExecMethod(mappedStatement, mapperClass, annotation);
-        if (curMethod.shouldIgnore) {
-            return invocation.proceed();
-        }
         Set<String> tableNames = getTableNames(boundSql, annotation);
         Map<String, String> routingTableMap = new HashMap<>(tableNames.size());
         if (TableShardHolder.hasVal()) {
@@ -98,12 +88,16 @@ public class TableShardInterceptor implements Interceptor {
                 }
             }
         }
-        if (annotation.enableCreateTable()) {
-            //默认是用执行的mapper进行表新建
-            handleTableCreate(invocation, metaObject, mapperClass, routingTableMap, annotation);
-        }
-        if(TableShardHolder.hasVal()){
+        if (TableShardHolder.hasVal()) {
+            if (annotation.enableCreateTable()) {
+                //默认是用执行的mapper进行表新建
+                handleTableCreate(invocation, mapperClass, routingTableMap, annotation);
+            }
             replaceSql(metaObject, boundSql, routingTableMap);
+            return invocation.proceed();
+        }
+        ExecBaseMethod.MethodInfo curMethod = getExecMethod(mappedStatement, mapperClass, annotation);
+        if (curMethod.shouldIgnore) {
             return invocation.proceed();
         }
         Class<? extends ITableShardStrategy> shardStrategy = annotation.shardStrategy();
@@ -125,6 +119,10 @@ public class TableShardInterceptor implements Interceptor {
             routingTableMap.put(tableName, resName);
         }
         //处理表sql
+        if (annotation.enableCreateTable()) {
+            //默认是用执行的mapper进行表新建
+            handleTableCreate(invocation, mapperClass, routingTableMap, annotation);
+        }
         replaceSql(metaObject, boundSql, routingTableMap);
         return invocation.proceed();
     }
@@ -137,7 +135,7 @@ public class TableShardInterceptor implements Interceptor {
         metaObject.setValue("delegate.boundSql.sql", sql);
     }
 
-    private void handleTableCreate(Invocation invocation, MetaObject metaStatementHandler, Class<? extends BaseMapper> mapperClass, Map<String, String> routingTableMap, TableShard annotation) throws SQLException {
+    private void handleTableCreate(Invocation invocation,  Class<? extends BaseMapper> mapperClass, Map<String, String> routingTableMap, TableShard annotation) throws SQLException {
         //代表已经处理了这些表
         boolean exec = false;
         Collection<String> curTableValues = routingTableMap.values();
@@ -165,7 +163,7 @@ public class TableShardInterceptor implements Interceptor {
             Set<String> prepareHandledTable = new HashSet<>();
             for (Map.Entry<String, String> entry : routingTableMap.entrySet()) {
                 if (createTableSql.contains(entry.getKey())) {
-                    prepareHandledTable.add(entry.getKey());
+                    prepareHandledTable.add(entry.getValue());
                     createTableSql = createTableSql.replaceAll(entry.getKey(), entry.getValue());
                 }
             }
@@ -180,7 +178,7 @@ public class TableShardInterceptor implements Interceptor {
             boolean contains = existsTable(conn, curTableValues, checkTableSQL);
             if (contains) {
                 conn.setAutoCommit(preAutoCommitState);
-                HANDLED_TABLE.addAll(prepareHandledTable);
+                HANDLED_TABLE.addAll(curTableValues);
                 return;
             }
             try (PreparedStatement countStmt = conn.prepareStatement(createTableSql)) {
@@ -270,7 +268,7 @@ public class TableShardInterceptor implements Interceptor {
 
     /**
      * 如果只有一个参数，取那个
-     * 如果有多个，取带SpecificShardTableParam
+     * 如果有多个，取带ShardTableParam
      *
      * @return
      */
@@ -320,5 +318,11 @@ public class TableShardInterceptor implements Interceptor {
         return ApplicationContextHolder.getBeanOrInstance(invokeClass);
     }
 
-
+    @Override
+    public Object plugin(Object target) {
+        if (target instanceof RoutingStatementHandler) {
+            return Plugin.wrap(target, this);
+        }
+        return target;
+    }
 }

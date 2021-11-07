@@ -27,8 +27,10 @@ public class OrderController {
     private OrderInfoMapper orderInfoMapper;
 
     @GetMapping("/testAdd")
-    public void testAdd() {
-        orderService.saveOrders(OrderInfo.batchRandomData());
+    public List<OrderInfo> testAdd() {
+        List<OrderInfo> orders = OrderInfo.batchRandomData();
+        orderService.saveOrders(orders);
+        return orders;
     }
 
     @PostMapping("/query")

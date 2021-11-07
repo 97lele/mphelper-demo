@@ -12,7 +12,6 @@
         </collection>
     </resultMap>
     <update id="createTable">
-        drop table if exists order_info;
         create table if not exists order_info
         (
             order_id     bigint primary key not null comment '订单主键',
