@@ -173,7 +173,9 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
         if (param instanceof Shardable) {
             Collection<Shardable> shardables = (Collection<Shardable>) entityList;
             shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
+                TableShardHolder.putVal(param.getClass(),k);
                 super.saveBatch((Collection<T>) v);
+                TableShardHolder.remove(param.getClass());
             });
             return true;
         }
@@ -188,7 +190,9 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
        if (param instanceof Shardable) {
            Collection<Shardable> shardables = (Collection<Shardable>) entityList;
            shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
+               TableShardHolder.putVal(param.getClass(),k);
                super.updateBatchById((Collection<T>) v);
+               TableShardHolder.remove(param.getClass());
            });
            return true;
        }
