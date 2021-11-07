@@ -1,16 +1,13 @@
 package com.xl.mphelper.example.mapper;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xl.mphelper.annonations.TableShard;
 import com.xl.mphelper.annonations.TableShardIgnore;
 import com.xl.mphelper.annonations.TableShardParam;
 import com.xl.mphelper.example.entity.OrderInfo;
-import com.xl.mphelper.example.shards.CommonStrategy;
 import com.xl.mphelper.mapper.CustomMapper;
-import org.apache.ibatis.annotations.Param;
+import com.xl.mphelper.shard.CommonStrategy;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.cursor.Cursor;
 

@@ -3,6 +3,7 @@ package com.xl.mphelper.example;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xl.mphelper.example.controller.OrderController;
 import com.xl.mphelper.example.entity.OrderInfo;
+import com.xl.mphelper.example.service.IOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -28,6 +29,9 @@ public class MpHelperApplication {
         log.info("分页查询{}", orderInfoPage.getRecords().size());
         List<OrderInfo> query = controller.query(suffix);
         log.info("查询所有{}", query.size());
+        IOrderService service = run.getBean(IOrderService.class);
+        //自定义service的crud操作
+        service.testCustomServiceShardCRUD();
 
     }
 }

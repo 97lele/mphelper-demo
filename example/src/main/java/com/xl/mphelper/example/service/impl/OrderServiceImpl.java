@@ -34,10 +34,10 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
     @Resource
     private OrderDetailMapper orderDetailMapper;
     @Resource
-    private OrderServiceImpl orderService;
+    private OrderDetailServiceImpl detailService;
 
     @Override
-    public void testSaveBatch() {
+    public void testSaveBatchPlus() {
         TableShardHolder.ignore();
         //这个是新增的
         List<OrderInfo> param = new ArrayList<>();
@@ -70,12 +70,30 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
         TableShardHolder.resetIgnore();
     }
 
+    @Override
+    public void testCustomServiceShardCRUD() {
+        List<OrderInfo> orderInfos = OrderInfo.batchRandomData();
+        List<OrderDetail> detailList = new ArrayList<>();
+        for (OrderInfo orderInfo : orderInfos) {
+            long orderId = SnowflakeIds.generate();
+            orderInfo.setOrderId(orderId);
+            List<OrderDetail> detailList1 = orderInfo.getDetailList();
+            detailList1.forEach(e -> {
+                e.setDetailId(SnowflakeIds.generate());
+                e.setOrderId(orderId);
+            });
+            detailList.addAll(detailList1);
+        }
+        saveBatchShard(orderInfos);
+        updateBatchByShard(orderInfos);
+        removeByShard(orderInfos);
+        detailService.saveBatchShard(detailList);
+        detailService.updateBatchByShard(detailList);
+        detailService.removeByShard(detailList);
+    }
 
     @Override
     public void saveOrders(Collection<OrderInfo> orders) {
-        for (OrderInfo order : orders) {
-
-        }
         Map<String, List<OrderInfo>> collect = orders.stream().collect(Collectors.groupingBy(OrderInfo::suffix));
         for (Map.Entry<String, List<OrderInfo>> entry : collect.entrySet()) {
             List<OrderInfo> value = entry.getValue();

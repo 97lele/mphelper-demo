@@ -17,6 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.xl.mphelper.shard.Shardable;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

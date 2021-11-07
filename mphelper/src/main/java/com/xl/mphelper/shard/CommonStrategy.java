@@ -1,7 +1,5 @@
-package com.xl.mphelper.example.shards;
+package com.xl.mphelper.shard;
 
-import com.xl.mphelper.example.entity.Shardable;
-import com.xl.mphelper.shard.ITableShardStrategy;
 
 /**
  * @author tanjl11

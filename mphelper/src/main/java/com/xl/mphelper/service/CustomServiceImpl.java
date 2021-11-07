@@ -14,6 +14,8 @@ import com.baomidou.mybatisplus.core.toolkit.*;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xl.mphelper.mapper.CustomMapper;
+import com.xl.mphelper.shard.Shardable;
+import com.xl.mphelper.shard.TableShardHolder;
 import com.xl.mphelper.util.ApplicationContextHolder;
 import com.xl.mphelper.util.SnowflakeIds;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +62,7 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Function<T, ?> uniqueKey,Supplier<Serializable> idGenerator) {
+    public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Function<T, ?> uniqueKey, Supplier<Serializable> idGenerator) {
         return saveBatchPlus(entity, () -> list(queryWrapper), uniqueKey, idGenerator);
     }
 
@@ -156,6 +158,73 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
         Class<?> cls = list.iterator().next().getClass();
         TableInfo tableInfo = TableInfoHelper.getTableInfo(cls);
         return tableInfo.getKeyProperty();
+    }
+
+    /**
+     * 分表新增
+     * @param entityList
+     * @return
+     */
+    public boolean saveBatchShard(Collection<T> entityList) {
+        if (CollectionUtils.isEmpty(entityList)) {
+            return false;
+        }
+        T param = entityList.iterator().next();
+        if (param instanceof Shardable) {
+            Collection<Shardable> shardables = (Collection<Shardable>) entityList;
+            shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
+                super.saveBatch((Collection<T>) v);
+            });
+            return true;
+        }
+        return false;
+    }
+
+   public boolean updateBatchByShard(Collection<T> entityList){
+       if (CollectionUtils.isEmpty(entityList)) {
+           return false;
+       }
+       T param = entityList.iterator().next();
+       if (param instanceof Shardable) {
+           Collection<Shardable> shardables = (Collection<Shardable>) entityList;
+           shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
+               super.updateBatchById((Collection<T>) v);
+           });
+           return true;
+       }
+       return false;
+   }
+
+    /**
+     * 分表删除
+     * @param entityList
+     * @return
+     */
+    public boolean removeByShard(Collection<T> entityList){
+        if (CollectionUtils.isEmpty(entityList)) {
+            return false;
+        }
+        T param = entityList.iterator().next();
+        if (param instanceof Shardable) {
+            Collection<Shardable> shardables = (Collection<Shardable>) entityList;
+            String keyProperty = getKeyPropertyFromLists(entityList);
+            shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
+                TableShardHolder.putVal(param.getClass(),k);
+                List<Serializable> id=new ArrayList<>(v.size());;
+                for (Shardable shardable : v) {
+                    Serializable idValue = (Serializable) ReflectionKit.getFieldValue(shardable, keyProperty);
+                    id.add(idValue);
+                }
+                super.removeByIds(id);
+                TableShardHolder.remove(param.getClass());
+            });
+            return true;
+        }
+        return false;
+    }
+    @Override
+    public boolean removeByIds(Collection<? extends Serializable> idList) {
+        return super.removeByIds(idList);
     }
 
     /**

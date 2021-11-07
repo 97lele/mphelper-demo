@@ -46,7 +46,7 @@ public class OrderController {
 
     @PostMapping("/testBatch")
     public void testBatch() {
-        orderService.testSaveBatch();
+        orderService.testSaveBatchPlus();
     }
 
     @GetMapping("/test")

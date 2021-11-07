@@ -1,4 +1,4 @@
-package com.xl.mphelper.example.entity;
+package com.xl.mphelper.shard;
 
 /**
  * @author tanjl11

@@ -13,9 +13,11 @@ import java.util.List;
 public interface IOrderService {
     void saveOrders(Collection<OrderInfo> orders);
 
+    void testCustomServiceShardCRUD();
+
     List<OrderInfo> queryAll(String month);
 
     Page<OrderInfo> queryByPage(String month);
 
-    void testSaveBatch();
+    void testSaveBatchPlus();
 }
