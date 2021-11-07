@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.binding.MapperMethod;
-import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.executor.statement.RoutingStatementHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
@@ -28,7 +27,7 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 import org.apache.ibatis.session.Configuration;
 import com.xl.mphelper.annonations.TableShard;
 import com.xl.mphelper.annonations.TableShardParam;
-import org.mybatis.spring.SqlSessionTemplate;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
@@ -153,11 +152,11 @@ public class TableShardInterceptor implements Interceptor {
         if (tableMethod.length() > 0) {
             createTableMethod = ReflectionUtils.findMethod(mapperClass, tableMethod);
         }
-        //把建表语句对应的sql进行表名的替换
+        //把建表语句对应的sql进行表名的替换,如果是ignore接口，不会进行调用
         if (createTableMethod != null && !createTableMethod.isAnnotationPresent(TableShardIgnore.class)) {
-            SqlSessionTemplate template = ApplicationContextHolder.getBean(SqlSessionTemplate.class);
+            SqlSessionFactory sessionFactory = ApplicationContextHolder.getBean(SqlSessionFactory.class);
             String methodPath = mapperClass.getName() + "." + tableMethod;
-            Configuration configuration = template.getConfiguration();
+            Configuration configuration = sessionFactory.getConfiguration();
             String createTableSql = configuration.getMappedStatement(methodPath).getBoundSql("delegate.boundSql").getSql();
             //判断是否已经有这个表
             Set<String> prepareHandledTable = new HashSet<>();
