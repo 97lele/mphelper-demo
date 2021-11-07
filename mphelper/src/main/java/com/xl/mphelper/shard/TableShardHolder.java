@@ -13,13 +13,16 @@ import java.util.Map;
  */
 public class TableShardHolder {
     protected static ThreadLocal<Map<String, String>> HOLDER = ThreadLocal.withInitial(HashMap::new);
-    private static String INGORE_FLAG = "ingore";
+    private static String INGORE_FLAG = "##ingore@@";
 
     //默认以_拼接
     public static void putVal(Class entityClazz, String suffix) {
         if (entityClazz.isAnnotationPresent(TableName.class)) {
             TableName tableName = (TableName) entityClazz.getAnnotation(TableName.class);
             String value = tableName.value();
+            if(value.equals(INGORE_FLAG)){
+                throw new IllegalStateException("conflict with ignore flag,try another table name");
+            }
             HOLDER.get().put(value, value + "_" + suffix);
         }
     }
