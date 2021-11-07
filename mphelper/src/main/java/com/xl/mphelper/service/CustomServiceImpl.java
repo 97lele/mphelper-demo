@@ -3,7 +3,6 @@ package com.xl.mphelper.service;
 import com.baomidou.mybatisplus.core.conditions.AbstractLambdaWrapper;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.enums.SqlMethod;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -13,6 +12,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.core.toolkit.*;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xl.mphelper.annonations.TableShard;
 import com.xl.mphelper.mapper.CustomMapper;
 import com.xl.mphelper.shard.Shardable;
 import com.xl.mphelper.shard.TableShardHolder;
@@ -27,7 +27,9 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,11 +44,10 @@ import java.util.stream.Collectors;
  * 1.指定列更新空值
  * 2.所有列更新空值
  * 一般场景用updateBatchById、updateById即可
- *
+ * <p>
  * 添加保存方法，把更新、删除、新增的方法进行整合 saveBatchPlus
- *
+ * <p>
  * 分表 CUR整合
- *
  */
 @SuppressWarnings(value = {"unchecked", "rawtypes"})
 @Slf4j
@@ -179,14 +180,35 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             Collection<Shardable> shardables = (Collection<Shardable>) entityList;
             shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
                 if (CollectionUtils.isNotEmpty(v)) {
+                    putValIfExistHashStrategy();
                     TableShardHolder.putVal(param.getClass(), k);
                     super.saveBatch((Collection<T>) v);
                     TableShardHolder.remove(param.getClass());
+                    TableShardHolder.clearHashTableLength();
                 }
             });
             return true;
         }
         return false;
+    }
+
+    private void putValIfExistHashStrategy() {
+        TableShard annotation=null;
+        for (AnnotatedType annotatedInterface : baseMapper.getClass().getAnnotatedInterfaces()) {
+            Type type = annotatedInterface.getType();
+            Class<?> curClass = (Class<?>) type;
+            if(BaseMapper.class.isAssignableFrom(curClass)){
+                 annotation = (curClass).getAnnotation(TableShard.class);
+                 break;
+            }
+        }
+        if(annotation==null){
+            throw new IllegalStateException("not found tableShard in mapper");
+        }
+        int i = annotation.hashTableLength();
+        if (i != -1) {
+            TableShardHolder.hashTableLength(i);
+        }
     }
 
     public boolean updateBatchByShard(Collection<T> entityList) {
@@ -198,9 +220,11 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             Collection<Shardable> shardables = (Collection<Shardable>) entityList;
             shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
                 if (CollectionUtils.isNotEmpty(v)) {
+                    putValIfExistHashStrategy();
                     TableShardHolder.putVal(param.getClass(), k);
                     super.updateBatchById((Collection<T>) v);
                     TableShardHolder.remove(param.getClass());
+                    TableShardHolder.clearHashTableLength();
                 }
             });
             return true;
@@ -234,9 +258,11 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
                 if (ids.isEmpty()) {
                     return;
                 }
+                putValIfExistHashStrategy();
                 TableShardHolder.putVal(param.getClass(), k);
                 super.removeByIds(ids);
                 TableShardHolder.remove(param.getClass());
+                TableShardHolder.clearHashTableLength();
             });
             return true;
         }

@@ -1,7 +1,10 @@
 package com.xl.mphelper.shard;
 
+import com.alibaba.druid.support.json.JSONUtils;
 import com.xl.mphelper.annonations.TableShardParam;
+import org.springframework.util.DigestUtils;
 
+import java.nio.charset.StandardCharsets;
 /**
  * @author tanjl11
  * @date 2021/10/15 16:18
@@ -27,11 +30,41 @@ public interface ITableShardStrategy<T> {
         }
     }
 
-    class CommonStrategy implements ITableShardStrategy<Shardable>{
+    class CommonStrategy implements ITableShardStrategy<Shardable> {
 
         @Override
         public String routingTable(String tableName, Shardable shardable) {
             return tableName + "_" + shardable.suffix();
+        }
+    }
+
+    class HashStrategy implements ITableShardStrategy {
+        @Override
+        public String routingTable(String tableName, Object entity) {
+            Integer length = TableShardHolder.hashTableLength();
+            if (length == null||length==0) {
+                throw new IllegalStateException("illegal hash length in TableShardHolder");
+            }
+            String hashKey=null;
+            if (entity instanceof String) {
+                hashKey= (String) entity;
+            }
+            if(entity instanceof Shardable){
+                hashKey=((Shardable)entity).suffix();
+            }
+            if(entity instanceof Number){
+                hashKey=entity.toString();
+            }
+            if(hashKey==null&&entity!=null){
+                hashKey= JSONUtils.toJSONString(entity);
+            }
+            if(hashKey==null){
+                throw new IllegalStateException("can not generate hashKey in current param:"+entity);
+            }
+            String value = DigestUtils.md5DigestAsHex(hashKey.getBytes(StandardCharsets.UTF_8));
+            value=value.substring(value.length()-4);
+            long hashMod = Long.parseLong(value, 16);
+            return tableName+"_"+hashMod % length;
         }
     }
 }

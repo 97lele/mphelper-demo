@@ -25,7 +25,10 @@ public @interface TableShard {
 
 
     //获取表名的策略
-    Class<? extends ITableShardStrategy> shardStrategy();
+    Class<? extends ITableShardStrategy> shardStrategy() default ITableShardStrategy.CommonStrategy.class;
+
+    //是否启用hash策略，-1不启用，其他作为分表的数量
+    int hashTableLength() default -1;
 
     //默认使用的db策略
     Class<? extends ITableShardDbType> dbType() default ITableShardDbType.MysqlShard.class;

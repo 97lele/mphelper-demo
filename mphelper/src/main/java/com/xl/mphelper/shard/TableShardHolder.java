@@ -1,6 +1,7 @@
 package com.xl.mphelper.shard;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xl.mphelper.util.ApplicationContextHolder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,16 +13,22 @@ import java.util.Map;
  * 否则默认走拦截器的获取参数逻辑
  */
 public class TableShardHolder {
-    protected static ThreadLocal<Map<String, String>> HOLDER = ThreadLocal.withInitial(HashMap::new);
+    protected static ThreadLocal<Map<String, Object>> HOLDER = ThreadLocal.withInitial(HashMap::new);
     private static String INGORE_FLAG = "##ingore@@";
+    private static String HASH_LENGTH = "##hash_length@@";
 
     //默认以_拼接
     public static void putVal(Class entityClazz, String suffix) {
         if (entityClazz.isAnnotationPresent(TableName.class)) {
             TableName tableName = (TableName) entityClazz.getAnnotation(TableName.class);
             String value = tableName.value();
-            if(value.equals(INGORE_FLAG)){
+            if (value.equals(INGORE_FLAG) || value.equals(HASH_LENGTH)) {
                 throw new IllegalStateException("conflict with ignore flag,try another table name");
+            }
+            //hash策略处理
+            if (hashTableLength() != null) {
+                ITableShardStrategy tableShardStrategy = TableShardInterceptor.SHARD_STRATEGY.computeIfAbsent(ITableShardStrategy.HashStrategy.class,e->(ITableShardStrategy) ApplicationContextHolder.getBeanOrInstance(e));
+                suffix = tableShardStrategy.routingTable(value, suffix);
             }
             HOLDER.get().put(value, value + "_" + suffix);
         }
@@ -48,7 +55,7 @@ public class TableShardHolder {
     }
 
     protected static String getReplaceName(String tableName) {
-        return HOLDER.get().get(tableName);
+        return (String) HOLDER.get().get(tableName);
     }
 
     protected static boolean containTable(String tableName) {
@@ -59,7 +66,19 @@ public class TableShardHolder {
         return HOLDER.get() != null && !HOLDER.get().isEmpty();
     }
 
-    public static void clear() {
+    public static void clearAll() {
         HOLDER.remove();
+    }
+
+    public static void hashTableLength(int length) {
+        HOLDER.get().put(HASH_LENGTH, length);
+    }
+
+    protected static Integer hashTableLength() {
+        return (Integer) HOLDER.get().get(HASH_LENGTH);
+    }
+
+    public static void clearHashTableLength() {
+        HOLDER.get().remove(HASH_LENGTH);
     }
 }

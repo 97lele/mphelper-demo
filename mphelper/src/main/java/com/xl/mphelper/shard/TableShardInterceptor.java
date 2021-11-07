@@ -58,7 +58,7 @@ public class TableShardInterceptor implements Interceptor {
     private static final ReflectorFactory REFLECTOR_FACTORY = new DefaultReflectorFactory();
 
     private static final Map<String, Class> MAPPER_CLASS_CACHE = new ConcurrentHashMap<>();
-    private static final Map<Class, ITableShardStrategy> SHARD_STRATEGY = new ConcurrentHashMap<>();
+    protected static final Map<Class, ITableShardStrategy> SHARD_STRATEGY = new ConcurrentHashMap<>();
     private static final Map<Class, ITableShardDbType> SHARD_DB = new ConcurrentHashMap<>();
 
     private static final Set<String> HANDLED_TABLE = new ConcurrentSkipListSet<>();
@@ -99,7 +99,16 @@ public class TableShardInterceptor implements Interceptor {
         if (curMethod.shouldIgnore) {
             return invocation.proceed();
         }
+        //hash逻辑处理
         Class<? extends ITableShardStrategy> shardStrategy = annotation.shardStrategy();
+        boolean autoHash=false;
+        if(annotation.hashTableLength()!=-1){
+            shardStrategy= ITableShardStrategy.HashStrategy.class;
+            if(TableShardHolder.hashTableLength()==null){
+                autoHash=true;
+                TableShardHolder.hashTableLength(annotation.hashTableLength());
+            }
+        }
         ITableShardStrategy strategy = SHARD_STRATEGY.computeIfAbsent(shardStrategy, e -> (ITableShardStrategy) getObjectByClass(e));
         if (strategy == null) {
             return invocation.proceed();
@@ -116,6 +125,10 @@ public class TableShardInterceptor implements Interceptor {
             }
             resName = strategy.routingTable(tableName, objFromCurMethod);
             routingTableMap.put(tableName, resName);
+        }
+        //如果是自动hash,清除
+        if(autoHash){
+            TableShardHolder.clearHashTableLength();
         }
         //处理表sql
         if (annotation.enableCreateTable()) {

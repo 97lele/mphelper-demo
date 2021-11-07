@@ -127,7 +127,7 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
         TableShardHolder.putVal(OrderDetail.class, month);
         Page<OrderInfo> res = orderInfoMapper.testLeftJoin(page, month
         );
-        TableShardHolder.clear();
+        TableShardHolder.clearAll();
         return res;
     }
 
