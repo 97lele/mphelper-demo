@@ -16,6 +16,8 @@ import org.apache.ibatis.executor.statement.RoutingStatementHandler;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.SqlCommandType;
+import org.apache.ibatis.mapping.StatementType;
 import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.MetaObject;
@@ -88,7 +90,8 @@ public class TableShardInterceptor implements Interceptor {
             }
         }
         if (TableShardHolder.hasVal()) {
-            if (annotation.enableCreateTable()) {
+            //新增的语句才需要
+            if (annotation.enableCreateTable() && SqlCommandType.INSERT.equals(mappedStatement.getSqlCommandType())) {
                 //默认是用执行的mapper进行表新建
                 handleTableCreate(invocation, mapperClass, routingTableMap, annotation);
             }
@@ -101,11 +104,11 @@ public class TableShardInterceptor implements Interceptor {
         }
         //hash逻辑处理
         Class<? extends ITableShardStrategy> shardStrategy = annotation.shardStrategy();
-        boolean autoHash=false;
-        if(annotation.hashTableLength()!=-1){
-            shardStrategy= ITableShardStrategy.HashStrategy.class;
-            if(TableShardHolder.hashTableLength()==null){
-                autoHash=true;
+        boolean autoHash = false;
+        if (annotation.hashTableLength() != -1) {
+            shardStrategy = ITableShardStrategy.HashStrategy.class;
+            if (TableShardHolder.hashTableLength() == null) {
+                autoHash = true;
                 TableShardHolder.hashTableLength(annotation.hashTableLength());
             }
         }
@@ -117,7 +120,7 @@ public class TableShardInterceptor implements Interceptor {
         for (String tableName : tableNames) {
             String resName = null;
             if (objFromCurMethod == null) {
-                Pair<Object, ITableShardStrategy> res = getObjFromCurMethod(curMethod.parameters, boundSql);
+                Pair<Object, ITableShardStrategy> res = getObjFromCurMethod(curMethod.parameters, boundSql, autoHash);
                 if (res.getRight() != null) {
                     strategy = res.getRight();
                 }
@@ -127,11 +130,11 @@ public class TableShardInterceptor implements Interceptor {
             routingTableMap.put(tableName, resName);
         }
         //如果是自动hash,清除
-        if(autoHash){
+        if (autoHash) {
             TableShardHolder.clearHashTableLength();
         }
         //处理表sql
-        if (annotation.enableCreateTable()) {
+        if (annotation.enableCreateTable() && SqlCommandType.INSERT.equals(mappedStatement.getSqlCommandType())) {
             //默认是用执行的mapper进行表新建
             handleTableCreate(invocation, mapperClass, routingTableMap, annotation);
         }
@@ -147,7 +150,7 @@ public class TableShardInterceptor implements Interceptor {
         metaObject.setValue("delegate.boundSql.sql", sql);
     }
 
-    private void handleTableCreate(Invocation invocation,  Class<? extends BaseMapper> mapperClass, Map<String, String> routingTableMap, TableShard annotation) throws SQLException {
+    private void handleTableCreate(Invocation invocation, Class<? extends BaseMapper> mapperClass, Map<String, String> routingTableMap, TableShard annotation) throws SQLException {
         //代表已经处理了这些表
         boolean exec = false;
         Collection<String> curTableValues = routingTableMap.values();
@@ -281,10 +284,11 @@ public class TableShardInterceptor implements Interceptor {
     /**
      * 如果只有一个参数，取那个
      * 如果有多个，取带ShardTableParam
+     * 并且查看是否需要替换hash值
      *
      * @return
      */
-    private Pair<Object, ITableShardStrategy> getObjFromCurMethod(Parameter[] parameters, BoundSql boundSql) {
+    private Pair<Object, ITableShardStrategy> getObjFromCurMethod(Parameter[] parameters, BoundSql boundSql, boolean isAutoHash) {
         Object parameterObject = boundSql.getAdditionalParameter("_parameter");
         if (parameterObject == null) {
             parameterObject = boundSql.getParameterObject();
@@ -300,6 +304,12 @@ public class TableShardInterceptor implements Interceptor {
                 defaultParam = cur;
                 TableShardParam annotation = cur.getAnnotation(TableShardParam.class);
                 Class<? extends ITableShardStrategy> shardStrategy = annotation.shardStrategy();
+                if (isAutoHash) {
+                    if (annotation.hashTableLength() != -1) {
+                        TableShardHolder.hashTableLength(annotation.hashTableLength());
+                    }
+                    shardStrategy = ITableShardStrategy.HashStrategy.class;
+                }
                 res = SHARD_STRATEGY.computeIfAbsent(shardStrategy, e -> (ITableShardStrategy) getObjectByClass(e));
                 break;
             }

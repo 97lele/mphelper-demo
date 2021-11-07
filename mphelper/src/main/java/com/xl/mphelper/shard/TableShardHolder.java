@@ -3,6 +3,7 @@ package com.xl.mphelper.shard;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.xl.mphelper.util.ApplicationContextHolder;
 
+import javax.xml.ws.Holder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public class TableShardHolder {
             }
             //hash策略处理
             if (hashTableLength() != null) {
-                ITableShardStrategy tableShardStrategy = TableShardInterceptor.SHARD_STRATEGY.computeIfAbsent(ITableShardStrategy.HashStrategy.class,e->(ITableShardStrategy) ApplicationContextHolder.getBeanOrInstance(e));
+                ITableShardStrategy tableShardStrategy = TableShardInterceptor.SHARD_STRATEGY.computeIfAbsent(ITableShardStrategy.HashStrategy.class, e -> (ITableShardStrategy) ApplicationContextHolder.getBeanOrInstance(e));
                 suffix = tableShardStrategy.routingTable(value, suffix);
             }
             HOLDER.get().put(value, value + "_" + suffix);

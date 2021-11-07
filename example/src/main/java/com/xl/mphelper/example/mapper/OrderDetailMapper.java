@@ -12,8 +12,8 @@ import com.xl.mphelper.mapper.CustomMapper;
  * @author lele
  * @since 2021-10-27
  */
-//@TableShard(enableCreateTable = true, createTableMethod = "createTable")
-@TableShard(enableCreateTable = true,createTableMethod = "createTable", hashTableLength = 10)
+@TableShard(enableCreateTable = true, createTableMethod = "createTable")
+//@TableShard(enableCreateTable = true,createTableMethod = "createTable", hashTableLength = 10)
 public interface OrderDetailMapper extends CustomMapper<OrderDetail> {
     void createTable();
 }

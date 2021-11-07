@@ -27,9 +27,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.util.ReflectionUtils;
 
 import java.io.Serializable;
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -180,11 +178,9 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             Collection<Shardable> shardables = (Collection<Shardable>) entityList;
             shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
                 if (CollectionUtils.isNotEmpty(v)) {
-                    putValIfExistHashStrategy();
-                    TableShardHolder.putVal(param.getClass(), k);
-                    super.saveBatch((Collection<T>) v);
-                    TableShardHolder.remove(param.getClass());
-                    TableShardHolder.clearHashTableLength();
+                    wrapRunnable(() -> super.saveBatch((Collection<T>) v),
+                            param.getClass(), k
+                    );
                 }
             });
             return true;
@@ -192,17 +188,14 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
         return false;
     }
 
-    private void putValIfExistHashStrategy() {
-        TableShard annotation=null;
-        for (AnnotatedType annotatedInterface : baseMapper.getClass().getAnnotatedInterfaces()) {
-            Type type = annotatedInterface.getType();
-            Class<?> curClass = (Class<?>) type;
-            if(BaseMapper.class.isAssignableFrom(curClass)){
-                 annotation = (curClass).getAnnotation(TableShard.class);
-                 break;
-            }
-        }
-        if(annotation==null){
+    /**
+     * 对于查询且使用本地线程作为表名替换
+     * 需要在putVal前添加，putVal会对其进行处理
+     * {@link TableShardHolder#putVal(Class, String)}
+     */
+    public void putValIfExistHashStrategy() {
+        TableShard annotation = mapperClass.getAnnotation(TableShard.class);
+        if (annotation == null) {
             throw new IllegalStateException("not found tableShard in mapper");
         }
         int i = annotation.hashTableLength();
@@ -220,17 +213,61 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             Collection<Shardable> shardables = (Collection<Shardable>) entityList;
             shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
                 if (CollectionUtils.isNotEmpty(v)) {
-                    putValIfExistHashStrategy();
-                    TableShardHolder.putVal(param.getClass(), k);
-                    super.updateBatchById((Collection<T>) v);
-                    TableShardHolder.remove(param.getClass());
-                    TableShardHolder.clearHashTableLength();
+                    wrapRunnable(() -> super.updateBatchById((Collection<T>) v)
+                            , param.getClass(), k
+                    );
                 }
             });
             return true;
         }
         return false;
     }
+
+    public void wrapRunnable(Runnable runnable, Class<?> paramClass, String suffix) {
+        HashMap map = new HashMap();
+        map.put(paramClass, suffix);
+        wrapRunnable(runnable, map);
+    }
+
+    public void wrapRunnable(Runnable runnable, KVBuilder kvBuilder) {
+        wrapRunnable(runnable, kvBuilder.delegate);
+    }
+
+    public void wrapRunnable(Runnable runnable, Map<Class, String> map) {
+        putValIfExistHashStrategy();
+        for (Map.Entry<Class, String> entry : map.entrySet()) {
+            TableShardHolder.putVal(entry.getKey(), entry.getValue());
+        }
+        runnable.run();
+        for (Map.Entry<Class, String> entry : map.entrySet()) {
+            TableShardHolder.remove(entry.getKey());
+        }
+        TableShardHolder.clearHashTableLength();
+    }
+
+    public Object wrapSupplier(Supplier<?> res, Class<?> paramClass, String suffix) {
+        HashMap map = new HashMap();
+        map.put(paramClass, suffix);
+        return wrapSupplier(res, map);
+    }
+
+    public Object wrapSupplier(Supplier<?> res, KVBuilder kvBuilder) {
+        return wrapSupplier(res, kvBuilder.delegate);
+    }
+
+    public Object wrapSupplier(Supplier<?> res, Map<Class, String> map) {
+        putValIfExistHashStrategy();
+        for (Map.Entry<Class, String> entry : map.entrySet()) {
+            TableShardHolder.putVal(entry.getKey(), entry.getValue());
+        }
+        Object list = res.get();
+        for (Map.Entry<Class, String> entry : map.entrySet()) {
+            TableShardHolder.remove(entry.getKey());
+        }
+        TableShardHolder.clearHashTableLength();
+        return list;
+    }
+
 
     /**
      * 分表删除
@@ -258,11 +295,7 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
                 if (ids.isEmpty()) {
                     return;
                 }
-                putValIfExistHashStrategy();
-                TableShardHolder.putVal(param.getClass(), k);
-                super.removeByIds(ids);
-                TableShardHolder.remove(param.getClass());
-                TableShardHolder.clearHashTableLength();
+                wrapRunnable(() -> removeByIds(ids), param.getClass(), k);
             });
             return true;
         }
@@ -415,6 +448,19 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
         @Override
         public String columnToString(SFunction column) {
             return super.columnToString(column);
+        }
+    }
+
+    public static class KVBuilder {
+        private Map<Class, String> delegate = new HashMap<>();
+
+        public static KVBuilder create() {
+            return new KVBuilder();
+        }
+
+        public KVBuilder put(Class key, String suffix) {
+            delegate.put(key, suffix);
+            return this;
         }
     }
 }

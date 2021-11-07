@@ -123,11 +123,9 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
     @Override
     public Page<OrderInfo> queryByPage(String month) {
         Page<OrderInfo> page = new Page<>();
-        TableShardHolder.putVal(OrderInfo.class, month);
-        TableShardHolder.putVal(OrderDetail.class, month);
-        Page<OrderInfo> res = orderInfoMapper.testLeftJoin(page, month
+        Page<OrderInfo> res = (Page<OrderInfo>) wrapSupplier(() -> orderInfoMapper.testLeftJoin(page, month), KVBuilder.create()
+                .put(OrderInfo.class, month).put(OrderDetail.class, month)
         );
-        TableShardHolder.clearAll();
         return res;
     }
 

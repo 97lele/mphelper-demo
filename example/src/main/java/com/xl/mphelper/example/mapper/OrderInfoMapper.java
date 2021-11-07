@@ -20,8 +20,8 @@ import java.util.List;
  * @author lele
  * @since 2021-10-27
  */
-//@TableShard(enableCreateTable = true, createTableMethod = "createTable")
-@TableShard(enableCreateTable = true,createTableMethod = "createTable", hashTableLength = 10)
+@TableShard(enableCreateTable = true, createTableMethod = "createTable")
+//@TableShard(enableCreateTable = true,createTableMethod = "createTable", hashTableLength = 10)
 public interface OrderInfoMapper extends CustomMapper<OrderInfo> {
     void createTable();
 
