@@ -42,7 +42,11 @@ import java.util.stream.Collectors;
  * 1.指定列更新空值
  * 2.所有列更新空值
  * 一般场景用updateBatchById、updateById即可
- * 添加保存方法，把更新、删除、新增的方法进行整合
+ *
+ * 添加保存方法，把更新、删除、新增的方法进行整合 saveBatchPlus
+ *
+ * 分表 CUR整合
+ *
  */
 @SuppressWarnings(value = {"unchecked", "rawtypes"})
 @Slf4j
@@ -162,6 +166,7 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
 
     /**
      * 分表新增
+     *
      * @param entityList
      * @return
      */
@@ -173,38 +178,43 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
         if (param instanceof Shardable) {
             Collection<Shardable> shardables = (Collection<Shardable>) entityList;
             shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
-                TableShardHolder.putVal(param.getClass(),k);
-                super.saveBatch((Collection<T>) v);
-                TableShardHolder.remove(param.getClass());
+                if (CollectionUtils.isNotEmpty(v)) {
+                    TableShardHolder.putVal(param.getClass(), k);
+                    super.saveBatch((Collection<T>) v);
+                    TableShardHolder.remove(param.getClass());
+                }
             });
             return true;
         }
         return false;
     }
 
-   public boolean updateBatchByShard(Collection<T> entityList){
-       if (CollectionUtils.isEmpty(entityList)) {
-           return false;
-       }
-       T param = entityList.iterator().next();
-       if (param instanceof Shardable) {
-           Collection<Shardable> shardables = (Collection<Shardable>) entityList;
-           shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
-               TableShardHolder.putVal(param.getClass(),k);
-               super.updateBatchById((Collection<T>) v);
-               TableShardHolder.remove(param.getClass());
-           });
-           return true;
-       }
-       return false;
-   }
+    public boolean updateBatchByShard(Collection<T> entityList) {
+        if (CollectionUtils.isEmpty(entityList)) {
+            return false;
+        }
+        T param = entityList.iterator().next();
+        if (param instanceof Shardable) {
+            Collection<Shardable> shardables = (Collection<Shardable>) entityList;
+            shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
+                if (CollectionUtils.isNotEmpty(v)) {
+                    TableShardHolder.putVal(param.getClass(), k);
+                    super.updateBatchById((Collection<T>) v);
+                    TableShardHolder.remove(param.getClass());
+                }
+            });
+            return true;
+        }
+        return false;
+    }
 
     /**
      * 分表删除
+     *
      * @param entityList
      * @return
      */
-    public boolean removeByShard(Collection<T> entityList){
+    public boolean removeByShard(Collection<T> entityList) {
         if (CollectionUtils.isEmpty(entityList)) {
             return false;
         }
@@ -213,15 +223,19 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             Collection<Shardable> shardables = (Collection<Shardable>) entityList;
             String keyProperty = getKeyPropertyFromLists(entityList);
             shardables.stream().collect(Collectors.groupingBy(Shardable::suffix)).forEach((k, v) -> {
-                TableShardHolder.putVal(param.getClass(),k);
-                List<Serializable> id=new ArrayList<>(v.size());;
+                List<Serializable> ids = new ArrayList<>(v.size());
+                ;
                 for (Shardable shardable : v) {
                     Serializable idValue = (Serializable) ReflectionKit.getFieldValue(shardable, keyProperty);
-                    if(Objects.nonNull(idValue)){
-                        id.add(idValue);
+                    if (Objects.nonNull(idValue)) {
+                        ids.add(idValue);
                     }
                 }
-                super.removeByIds(id);
+                if (ids.isEmpty()) {
+                    return;
+                }
+                TableShardHolder.putVal(param.getClass(), k);
+                super.removeByIds(ids);
                 TableShardHolder.remove(param.getClass());
             });
             return true;
