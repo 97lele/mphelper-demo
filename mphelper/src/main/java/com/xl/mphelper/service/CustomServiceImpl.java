@@ -213,7 +213,9 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
                 List<Serializable> id=new ArrayList<>(v.size());;
                 for (Shardable shardable : v) {
                     Serializable idValue = (Serializable) ReflectionKit.getFieldValue(shardable, keyProperty);
-                    id.add(idValue);
+                    if(Objects.nonNull(idValue)){
+                        id.add(idValue);
+                    }
                 }
                 super.removeByIds(id);
                 TableShardHolder.remove(param.getClass());
@@ -221,10 +223,6 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             return true;
         }
         return false;
-    }
-    @Override
-    public boolean removeByIds(Collection<? extends Serializable> idList) {
-        return super.removeByIds(idList);
     }
 
     /**
