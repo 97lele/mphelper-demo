@@ -123,8 +123,7 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
     @Override
     public Page<OrderInfo> queryByPage(String month) {
         Page<OrderInfo> page = new Page<>();
-        Page<OrderInfo> res = (Page<OrderInfo>) wrapSupplier(() -> orderInfoMapper.testLeftJoin(page, month), KVBuilder.create()
-                .put(OrderInfo.class, month).put(OrderDetail.class, month)
+        Page<OrderInfo> res = (Page<OrderInfo>) wrapSupplier(() -> orderInfoMapper.testLeftJoin(page, month), KVBuilder.init(OrderInfo.class, month).put(OrderDetail.class, month)
         );
         return res;
     }

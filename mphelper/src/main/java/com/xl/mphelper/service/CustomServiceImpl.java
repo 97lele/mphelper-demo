@@ -454,8 +454,8 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
     public static class KVBuilder {
         private Map<Class, String> delegate = new HashMap<>();
 
-        public static KVBuilder create() {
-            return new KVBuilder();
+        public static KVBuilder init(Class key, String suffix) {
+            return new KVBuilder().put(key,suffix);
         }
 
         public KVBuilder put(Class key, String suffix) {
