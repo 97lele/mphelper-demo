@@ -7,7 +7,7 @@ import com.xl.mphelper.annonations.TableShardIgnore;
 import com.xl.mphelper.annonations.TableShardParam;
 import com.xl.mphelper.example.entity.OrderInfo;
 import com.xl.mphelper.mapper.CustomMapper;
-import com.xl.mphelper.shard.CommonStrategy;
+import com.xl.mphelper.shard.ITableShardStrategy;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.cursor.Cursor;
 
@@ -21,7 +21,7 @@ import java.util.List;
  * @author lele
  * @since 2021-10-27
  */
-@TableShard(enableCreateTable = true, createTableMethod = "createTable", shardStrategy = CommonStrategy.class)
+@TableShard(enableCreateTable = true, createTableMethod = "createTable", shardStrategy = ITableShardStrategy.CommonStrategy.class)
 public interface OrderInfoMapper extends CustomMapper<OrderInfo> {
     void createTable();
 

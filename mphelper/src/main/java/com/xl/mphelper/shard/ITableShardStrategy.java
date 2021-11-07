@@ -26,4 +26,12 @@ public interface ITableShardStrategy<T> {
             return tableName + "_" + entity.toString();
         }
     }
+
+    class CommonStrategy implements ITableShardStrategy<Shardable>{
+
+        @Override
+        public String routingTable(String tableName, Shardable shardable) {
+            return tableName + "_" + shardable.suffix();
+        }
+    }
 }
