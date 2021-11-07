@@ -6,9 +6,8 @@ import java.lang.reflect.Method;
 
 /**
  * 适配 pageInfo 分页
- * mybatis-plus的分页插件没测试过是否适配
- * 规定了每个mapper只能用一种分页插件
- *
+ * mybatis-plus的分页插件要额外适配
+ * 可以用本地线程进行处理
  * @author tanjl11
  * @date 2021/10/26 19:06
  */
