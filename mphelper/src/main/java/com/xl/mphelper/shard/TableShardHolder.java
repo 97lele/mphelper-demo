@@ -3,7 +3,6 @@ package com.xl.mphelper.shard;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.xl.mphelper.util.ApplicationContextHolder;
 
-import javax.xml.ws.Holder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,7 +14,7 @@ import java.util.Map;
  */
 public class TableShardHolder {
     protected static ThreadLocal<Map<String, Object>> HOLDER = ThreadLocal.withInitial(HashMap::new);
-    private static String INGORE_FLAG = "##ingore@@";
+    private static String IGNORE_FLAG = "##ignore@@";
     private static String HASH_LENGTH = "##hash_length@@";
 
     //默认以_拼接
@@ -23,7 +22,7 @@ public class TableShardHolder {
         if (entityClazz.isAnnotationPresent(TableName.class)) {
             TableName tableName = (TableName) entityClazz.getAnnotation(TableName.class);
             String value = tableName.value();
-            if (value.equals(INGORE_FLAG) || value.equals(HASH_LENGTH)) {
+            if (value.equals(IGNORE_FLAG) || value.equals(HASH_LENGTH)) {
                 throw new IllegalStateException("conflict with ignore flag,try another table name");
             }
             //hash策略处理
@@ -37,15 +36,15 @@ public class TableShardHolder {
     }
 
     public static void ignore() {
-        HOLDER.get().put(INGORE_FLAG, "");
+        HOLDER.get().put(IGNORE_FLAG, "");
     }
 
     protected static boolean isIgnore() {
-        return HOLDER.get().containsKey(INGORE_FLAG);
+        return HOLDER.get().containsKey(IGNORE_FLAG);
     }
 
     public static void resetIgnore() {
-        HOLDER.get().remove(INGORE_FLAG);
+        HOLDER.get().remove(IGNORE_FLAG);
     }
 
     public static void remove(Class entityClazz) {
