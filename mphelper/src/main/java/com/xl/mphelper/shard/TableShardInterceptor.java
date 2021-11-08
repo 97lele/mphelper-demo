@@ -55,14 +55,27 @@ import java.util.concurrent.ConcurrentSkipListSet;
 @Component
 @ConditionalOnExpression("${mphelper.shard-support:false}")
 public class TableShardInterceptor implements Interceptor {
+    /**
+     * 用于构造metaObject
+     */
     private static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
     private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
     private static final ReflectorFactory REFLECTOR_FACTORY = new DefaultReflectorFactory();
-
+    /**
+     * mapper缓存类
+     */
     private static final Map<String, Class> MAPPER_CLASS_CACHE = new ConcurrentHashMap<>();
+    /**
+     * 分表策略
+     */
     protected static final Map<Class, ITableShardStrategy> SHARD_STRATEGY = new ConcurrentHashMap<>();
+    /**
+     * 存放解析sql的类型
+     */
     private static final Map<Class, ITableShardDbType> SHARD_DB = new ConcurrentHashMap<>();
-
+    /**
+     * 自动建表逻辑：已经处理的表
+     */
     private static final Set<String> HANDLED_TABLE = new ConcurrentSkipListSet<>();
 
     @Override
@@ -82,14 +95,13 @@ public class TableShardInterceptor implements Interceptor {
         TableShard annotation = mapperClass.getAnnotation(TableShard.class);
         Set<String> tableNames = getTableNames(boundSql, annotation);
         Map<String, String> routingTableMap = new HashMap<>(tableNames.size());
+        //本地线程逻辑处理
         if (TableShardHolder.hasVal()) {
             for (String tableName : tableNames) {
                 if (TableShardHolder.containTable(tableName)) {
                     routingTableMap.put(tableName, TableShardHolder.getReplaceName(tableName));
                 }
             }
-        }
-        if (TableShardHolder.hasVal()) {
             //新增的语句才需要
             if (annotation.enableCreateTable() && SqlCommandType.INSERT.equals(mappedStatement.getSqlCommandType())) {
                 //默认是用执行的mapper进行表新建
@@ -116,6 +128,7 @@ public class TableShardInterceptor implements Interceptor {
         if (strategy == null) {
             return invocation.proceed();
         }
+        //获取方法中的策略及对应的入参
         Object objFromCurMethod = null;
         for (String tableName : tableNames) {
             String resName = null;
