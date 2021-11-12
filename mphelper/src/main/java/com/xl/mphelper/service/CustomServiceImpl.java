@@ -56,41 +56,40 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
 
     @Transactional(rollbackFor = Exception.class)
     public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper) {
-        return saveBatchPlus(entity, () -> list(queryWrapper), null, null);
+        return saveBatchPlus(entity,queryWrapper, null, null);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Function<T, ?> uniqueKey) {
-        return saveBatchPlus(entity, () -> list(queryWrapper), uniqueKey, null);
+        return saveBatchPlus(entity, queryWrapper, uniqueKey, null);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public int saveBatchPlus(Collection<T> entity, Wrapper<T> queryWrapper, Function<T, ?> uniqueKey, Supplier<Serializable> idGenerator) {
-        return saveBatchPlus(entity, () -> list(queryWrapper), uniqueKey, idGenerator);
+        return saveBatchPlus(entity, list(queryWrapper), uniqueKey, idGenerator);
     }
 
     /**
      * @param values        插入的项
-     * @param getExistsData 对比的数据范围
+     * @param existData 对比的数据范围
      * @param uniqueKey     updateList赋值的操作，根据该项形成map，然后把对应的数据库ID赋值到符合的value
      * @param idGenerator   ID生成的操作，没有默认是雪花
      * @return
      */
     @Transactional(rollbackFor = Exception.class)
-    public int saveBatchPlus(Collection<T> values, Supplier<Collection<T>> getExistsData, Function<T, ?> uniqueKey, Supplier<Serializable> idGenerator) {
+    public int saveBatchPlus(Collection<T> values, Collection<T> existData, Function<T, ?> uniqueKey, Supplier<Serializable> idGenerator) {
+        if (CollectionUtils.isEmpty(values) && CollectionUtils.isEmpty(existData)) {
+            return -1;
+        }
         String keyProperty = getKeyPropertyFromLists(values);
         boolean deleteAll = false;
-        Collection<T> list = getExistsData.get();
         if (CollectionUtils.isEmpty(values)) {
-            keyProperty = getKeyPropertyFromLists(list);
+            keyProperty = getKeyPropertyFromLists(existData);
             deleteAll = true;
-        }
-        if (keyProperty == null) {
-            throw new IllegalStateException("not keyProperty find in param");
         }
         //以传输过来的数据为准，不在传输范围内的删掉
         Set<Serializable> existsIds = new HashSet<>();
-        for (T t : list) {
+        for (T t : existData) {
             Serializable idVal = (Serializable) ReflectionKit.getFieldValue(t, keyProperty);
             existsIds.add(idVal);
         }
@@ -99,15 +98,17 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             return existsIds.size();
         }
         if (idGenerator == null) {
-            idGenerator = () -> SnowflakeIds.generate();
+            idGenerator = SnowflakeIds::generate;
         }
         //赋值updateList
         if (uniqueKey != null) {
-            Map<?, T> map = values.stream().collect(Collectors.toMap(uniqueKey, Function.identity(), (x1, x2) -> x1));
+            Map<?, T> map = existData.stream().collect(Collectors.toMap(uniqueKey, Function.identity(), (x1, x2) -> x1));
             for (T t : values) {
                 T dataValue = map.get(uniqueKey.apply(t));
-                Serializable idVal = (Serializable) ReflectionKit.getFieldValue(dataValue, keyProperty);
-                setId(() -> idVal, keyProperty, t);
+                if (dataValue != null) {
+                    Serializable idVal = (Serializable) ReflectionKit.getFieldValue(dataValue, keyProperty);
+                    setId(() -> idVal, keyProperty, t);
+                }
             }
         }
         //留下数据库存在的
@@ -133,13 +134,11 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
             } else {
                 updateBatchById(updateList);
             }
-
         }
         if (CollectionUtils.isNotEmpty(addList)) {
             if (baseMapper instanceof CustomMapper) {
                 ((CustomMapper<T>) baseMapper).insertBatch(addList);
             } else {
-
                 saveBatch(addList);
             }
         }
@@ -455,7 +454,7 @@ public class CustomServiceImpl<M extends BaseMapper<T>, T> extends ServiceImpl<M
         private Map<Class, String> delegate = new HashMap<>();
 
         public static KVBuilder init(Class key, String suffix) {
-            return new KVBuilder().put(key,suffix);
+            return new KVBuilder().put(key, suffix);
         }
 
         public KVBuilder put(Class key, String suffix) {
