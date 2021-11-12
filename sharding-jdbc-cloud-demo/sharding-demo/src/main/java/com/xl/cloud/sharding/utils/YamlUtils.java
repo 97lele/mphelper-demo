@@ -15,13 +15,25 @@ public final class YamlUtils {
         return yaml.loadAs(inputStream, Map.class);
     }
 
+    public static <T> T getFromMap(Map root, String key) {
+        String[] split = key.split("\\.");
+        for (int i = 0; i < split.length - 1; i++) {
+            Object o = root.get(split[i]);
+            if (o instanceof Map) {
+                root = (Map) o;
+            }
+        }
+        String resKey = split[split.length - 1];
+        return (T) root.get(resKey);
+    }
+
     public static String map2YamlStr(Map map) {
         Yaml yaml = new Yaml();
         ;
         return yaml.dump(map);
     }
 
-    public static <T> void replaceValue(String key, Map root, Class<T> valueClass, Function<T, T> replace) {
+    public static <T> T replaceValue(String key, Map root, Function<T, T> replace) {
         String[] split = key.split("\\.");
         for (int i = 0; i < split.length - 1; i++) {
             Object o = root.get(split[i]);
@@ -33,5 +45,6 @@ public final class YamlUtils {
         T value = (T) root.get(resKey);
         T newVal = replace.apply(value);
         root.put(resKey, newVal);
+        return newVal;
     }
 }

@@ -16,7 +16,10 @@ public class LocalDateShardAlgorithm implements StandardShardingAlgorithm<LocalD
         LocalDateTime value = shardingValue.getValue();
         String s = availableTargetNames.stream()
                 .filter(e -> e.contains(value.getYear() + "_" + value.getMonth().getValue()))
-                .findFirst().orElse(availableTargetNames.iterator().next());
+                .findFirst().orElseGet(() -> {
+                    log.warn("没找到符合的表名{}", value.getYear() + "_" + value.getMonth());
+                    return availableTargetNames.iterator().next();
+                });
         log.info("选取的表名{}", s);
         return s;
     }

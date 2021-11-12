@@ -10,6 +10,7 @@
             unit_price    decimal(18, 6)                     not null comment '单价',
             product_count int                                not null comment '商品数量',
             create_time   datetime                           not null comment '创建时间',
+            user_id      bigint                             not null comment '用户id',
             update_time   datetime default CURRENT_TIMESTAMP null comment '最后修改时间'
             ) engine = innodb
             charset = utf8mb4;

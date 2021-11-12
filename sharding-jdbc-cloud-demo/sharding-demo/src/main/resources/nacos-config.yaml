@@ -7,15 +7,27 @@ spring:
     rules:
       sharding:
         tables:
-          order_info:
-            key-generate-strategy: { column: order_id, key-generator-name: snowflake }
-            actual-data-nodes: demo.order_info_2021_10,demo.order_info_2021_9,demo.order_info_2021_11,demo.order_info_2021_8,demo.order_info_2021_12
+          order_detail:
+            key-generate-strategy: { column: order_detail_id, key-generator-name: snowflake }
+            actual-data-nodes: demo.order_detail_2021_10,demo.order_detail_2021_9,demo.order_detail_2021_11,demo.order_detail_2021_8,demo.order_detail_2021_12
             table-strategy:
               standard: { sharding-column: create_time, sharding-algorithm-name: localdate }
+          order_info:
+            key-generate-strategy: { column: order_id, key-generator-name: snowflake }
+            actual-data-nodes: demo.order_info_2021_10,demo.order_info_2021_9,demo.order_info_2021_11,demo.order_info_2021_8
+            table-strategy:
+              standard: { sharding-column: create_time, sharding-algorithm-name: localdate }
+        bindingTables:
+          - order_info,order_detail
         sharding-algorithms:
           localdate:
             type: CLASS_BASED
             props: { strategy: STANDARD, algorithmClassName: com.xl.cloud.sharding.shard.LocalDateShardAlgorithm }
+      key-generators:
+        snowflake:
+          type: SNOWFLAKE
+          props:
+            worker-id: 123
     datasource:
       name: demo
       demo: { type: com.alibaba.druid.pool.DruidDataSource, driver-class-name: com.mysql.jdbc.Driver,

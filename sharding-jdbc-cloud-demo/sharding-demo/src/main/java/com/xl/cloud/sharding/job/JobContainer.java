@@ -2,6 +2,7 @@ package com.xl.cloud.sharding.job;
 
 import com.alibaba.cloud.nacos.NacosConfigManager;
 import com.alibaba.nacos.api.config.ConfigService;
+import com.xl.cloud.sharding.listen.NacosConfigEventListener;
 import com.xl.cloud.sharding.mapper.OrderDetailMapper;
 import com.xl.cloud.sharding.mapper.OrderInfoMapper;
 import com.xl.cloud.sharding.utils.YamlUtils;
@@ -43,21 +44,24 @@ public class JobContainer {
         orderDetailMapper.createTable(suffix);
         orderInfoMapper.createTable(suffix);
         //创建完毕后，更改配置
-        StringBuilder dataId = new StringBuilder();
-        dataId.append(environment.getProperty("spring.application.name"));
-        String profile = environment.getProperty("spring.profiles.active");
-        String group = environment.getProperty("spring.cloud.nacos.discovery.group");
-        if (!StringUtil.isNullOrEmpty(profile)) {
-            dataId.append("-").append(profile);
-        }
-        String fileExtension = environment.getProperty("spring.cloud.nacos.config.file-extension");
-        dataId.append(".").append(fileExtension);
-        String value = dataId.toString();
+
+
         ConfigService configService = configManager.getConfigService();
-        String content = configService.getConfig(value, group, 500);
+        //获取配置文件内容
+        String dataId = NacosConfigEventListener.getDataId(environment);
+        String group = NacosConfigEventListener.getGroup(environment);
+        String content = configService.getConfig(dataId, group, 500);
+        //转换并替换对应的值
         Map map = YamlUtils.yamlStr2Map(content);
-        YamlUtils.replaceValue("spring.shardingsphere.rules.sharding.tables.order_info.actual-data-nodes", map, String.class, s -> {
+        String orderInfo = YamlUtils.replaceValue("spring.shardingsphere.rules.sharding.tables.order_info.actual-data-nodes", map, s -> {
             String appendValue = ",demo.order_info" + suffix;
+            if (!s.contains(appendValue)) {
+                return s + appendValue;
+            }
+            return s;
+        });
+        String orderDetail = YamlUtils.replaceValue("spring.shardingsphere.rules.sharding.tables.order_detail.actual-data-nodes", map, s -> {
+            String appendValue = ",demo.order_detail" + suffix;
             if (!s.contains(appendValue)) {
                 return s + appendValue;
             }
@@ -65,7 +69,10 @@ public class JobContainer {
         });
         String s = YamlUtils.map2YamlStr(map);
         log.info("文件{},内容{}", dataId, s);
-        boolean b = configService.publishConfig(value, group, s);
+        //推送最新的配置
+        boolean b = configService.publishConfig(dataId, group, s);
+        //推送完之后，要反射找到对应的值改一下
+        //TagRule
     }
 
 }

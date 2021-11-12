@@ -85,7 +85,7 @@ public class OrderInfo implements Serializable {
     public static OrderInfo randomData() {
         OrderInfo orderInfo = new OrderInfo();
         ThreadLocalRandom current = ThreadLocalRandom.current();
-        LocalDateTime createTime = LocalDateTime.now().plusMonths(current.nextLong(-3,3));
+        LocalDateTime createTime = LocalDateTime.now().plusMonths(current.nextLong(-3,1));
         orderInfo.setCreateTime(createTime);
         long userId = current.nextLong(1000000);
         orderInfo.setUserId(userId);
