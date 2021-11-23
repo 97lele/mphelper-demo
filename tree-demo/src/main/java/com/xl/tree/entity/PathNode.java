@@ -2,8 +2,7 @@ package com.xl.tree.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 /**
  * @author tanjl11
@@ -12,6 +11,9 @@ import lombok.Getter;
 @TableName("path_node")
 @Builder
 @Getter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class PathNode {
     @TableId
     private Long nodeId;

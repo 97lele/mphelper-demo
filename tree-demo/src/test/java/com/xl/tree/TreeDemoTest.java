@@ -3,6 +3,7 @@ package com.xl.tree;
 import com.xl.tree.entity.AdjacencyList;
 import com.xl.tree.entity.ClosureTable;
 import com.xl.tree.entity.NestedSet;
+import com.xl.tree.entity.PathNode;
 import com.xl.tree.service.impl.AdjacencyListServiceImpl;
 import com.xl.tree.service.impl.ClosureTableServiceImpl;
 import com.xl.tree.service.impl.NestedSetServiceImpl;
@@ -34,10 +35,33 @@ public class TreeDemoTest {
     static {
         sampleData = AdjacencyList.sampleData();
     }
-
+    /**
+     * *              0               10
+     * *           1    2           1    6
+     * *         3  4  5  6       3  4  7 8
+     * *        6        7 8     6
+     * *      7  8             7   8
+     * *
+     *
+     * @return
+     */
     @Test
     public void testPath() {
         pathNodeService.insertNodes(sampleData);
+        List<PathNode> nestedSets = pathNodeService.queryChildren(1L);
+        System.out.println("查询1的直接子节点");
+        nestedSets.forEach(System.out::println);
+        List<PathNode> nestedSets1 = pathNodeService.queryAllChildren(1L);
+        System.out.println("查询1的所有子节点");
+        nestedSets1.forEach(System.out::println);
+        List<PathNode> parent1 = pathNodeService.queryParents(6L);
+        System.out.println("查询6的直接父节点");
+        parent1.forEach(System.out::println);
+        List<PathNode> parent2 = pathNodeService.queryAllParents(6L);
+        System.out.println("查询6的所有父节点");
+        parent2.forEach(System.out::println);
+        pathNodeService.removeNodes(AdjacencyList.build(0L, 0L, null));
+        pathNodeService.removeNodes(AdjacencyList.build(10L, 10L, null));
     }
 
     @Test

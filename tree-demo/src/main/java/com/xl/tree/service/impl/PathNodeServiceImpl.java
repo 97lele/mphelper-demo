@@ -67,52 +67,60 @@ public class PathNodeServiceImpl implements TreeNodeService<PathNode> {
 
     @Override
     public List<PathNode> queryChildren(Long parentId) {
-        PathNode parent = pathNodeMapper.selectById(parentId);
-        String path = parent.getPath();
-        Integer level = parent.getLevel();
-        List<PathNode> children = pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
-                .likeRight(PathNode::getPath, path + "|")
-                .eq(PathNode::getLevel, level + 1)
-        );
+        List<PathNode> parent = pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
+                .eq(PathNode::getNodeId, parentId));
+        List<PathNode> children = new ArrayList<>();
+        for (PathNode pathNode : parent) {
+            String path = pathNode.getPath();
+            Integer level = pathNode.getLevel();
+            children.addAll(pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
+                    .likeRight(PathNode::getPath, path + "|")
+                    .eq(PathNode::getLevel, level + 1)
+            ));
+        }
         return children;
     }
 
     @Override
     public List<PathNode> queryAllChildren(Long parentId) {
-        PathNode parent = pathNodeMapper.selectById(parentId);
-        String path = parent.getPath();
-        return pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
-                .likeRight(PathNode::getPath, path + "|")
-        );
+        List<PathNode> parent = pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
+                .eq(PathNode::getNodeId, parentId));
+        List<PathNode> children = new ArrayList<>();
+        for (PathNode pathNode : parent) {
+            String path = pathNode.getPath();
+            children.addAll(pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
+                    .likeRight(PathNode::getPath, path + "|")
+            ));
+        }
+        return children;
     }
 
     @Override
     public void removeNodes(AdjacencyList node) {
-        Long curId = node.getNodeId();
-        PathNode pathNode = pathNodeMapper.selectById(curId);
-        String path = pathNode.getPath();
-        pathNodeMapper.delete(Wrappers.lambdaQuery(PathNode.class)
-                .likeRight(PathNode::getPath, path)
-        );
+        if (!node.getNodeId().equals(node.getPid())) {
+            List<PathNode> parent = pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
+                    .eq(PathNode::getNodeId, node.getNodeId()).eq(PathNode::getPid, node.getPid()));
+            for (PathNode pathNode : parent) {
+                String path = pathNode.getPath();
+                pathNodeMapper.delete(Wrappers.lambdaQuery(PathNode.class)
+                        .likeRight(PathNode::getPath, path)
+                );
+            }
+        } else {
+            pathNodeMapper.delete(Wrappers.lambdaQuery(PathNode.class)
+                    .likeRight(PathNode::getPath, node.getNodeId())
+            );
+        }
+
+
     }
 
     @Override
     public List<PathNode> queryParents(Long curId) {
-        PathNode pathNode = pathNodeMapper.selectById(curId);
-        String path = pathNode.getPath();
-        Integer level = pathNode.getLevel();
-        return pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
-                .eq(PathNode::getLevel, level)
-                .likeLeft(PathNode::getPath, path.substring(0, path.lastIndexOf("|")))
-        );
+        return pathNodeMapper.queryParent(curId);
     }
-
     @Override
     public List<PathNode> queryAllParents(Long curId) {
-        PathNode pathNode = pathNodeMapper.selectById(curId);
-        String path = pathNode.getPath();
-        return pathNodeMapper.selectList(Wrappers.lambdaQuery(PathNode.class)
-                .likeLeft(PathNode::getPath, path.substring(0, path.lastIndexOf("|")))
-        );
+        return pathNodeMapper.queryAllParent(curId);
     }
 }
