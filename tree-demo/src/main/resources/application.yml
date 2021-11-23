@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: tree-demo
+  datasource:
+    username: root
+    password: 123456
+    url: jdbc:mysql://localhost:3306/treedemo?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.jdbc.Driver
+logging:
+  level:
+    root: info
+    com.xl: debug
+server:
+  port: 1831

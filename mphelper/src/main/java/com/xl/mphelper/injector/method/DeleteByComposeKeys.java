@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.metadata.TableFieldInfo;
 import com.baomidou.mybatisplus.core.metadata.TableInfo;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.sql.SqlScriptUtils;
-import com.baomidou.mybatisplus.extension.exceptions.ApiException;
 import com.xl.mphelper.annonations.ComposeKey;
 import com.xl.mphelper.enums.CustomSqlMethodEnum;
 import com.xl.mphelper.injector.SQLConditionWrapper;
@@ -29,7 +28,7 @@ public class DeleteByComposeKeys extends AbstractMethod {
         List<TableFieldInfo> composeKeys = tableInfo.getFieldList().stream().filter(e -> e.getField().isAnnotationPresent(ComposeKey.class))
                 .collect(Collectors.toList());
         if(CollectionUtils.isEmpty(composeKeys)){
-            throw new ApiException("not composeKey found in class:"+modelClass.getName());
+            throw new IllegalStateException("not composeKey found in class:"+modelClass.getName());
         }
         StringBuilder builder=new StringBuilder();
         for (int i = 0; i < composeKeys.size(); i++) {

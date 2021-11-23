@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.metadata.TableFieldInfo;
 import com.baomidou.mybatisplus.core.metadata.TableInfo;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.sql.SqlScriptUtils;
-import com.baomidou.mybatisplus.extension.exceptions.ApiException;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlSource;
 import com.xl.mphelper.annonations.ComposeKey;
@@ -72,7 +71,7 @@ public class UpdateByComposeKeys extends AbstractMethod {
             }
         }
         if (placeHolder.length() == 0) {
-            throw new ApiException("not composeKey found in class:" + modelClass.getName());
+            throw new IllegalStateException("not composeKey found in class:" + modelClass.getName());
         }
         //处理多余的逗号
         if (!StringUtils.isBlank(lastFiledScriptBuilder) && !StringUtils.isBlank(withChevScript)) {

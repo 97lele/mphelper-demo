@@ -16,6 +16,7 @@
         <module>example</module>
         <module>sharding-jdbc-demo</module>
         <module>sharding-jdbc-cloud-demo</module>
+        <module>tree-demo</module>
     </modules>
     <packaging>pom</packaging>
 
