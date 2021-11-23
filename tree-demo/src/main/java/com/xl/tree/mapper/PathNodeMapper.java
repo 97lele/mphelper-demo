@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * @author tanjl11
  * @date 2021/11/22 14:37
- * 需要查父级 最好建立 path,node 索引
+ * 需要查父级 最好建立 path,node,level 索引，如果只建path，node，也可以先查出当前的子节点的level再赋值给对应sql作为过滤
  * 如果只是子级，path即可
  */
 public interface PathNodeMapper extends CustomMapper<PathNode> {
