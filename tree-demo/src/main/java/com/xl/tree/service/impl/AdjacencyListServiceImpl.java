@@ -8,10 +8,7 @@ import com.xl.tree.service.TreeNodeService;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,7 +41,7 @@ public class AdjacencyListServiceImpl implements TreeNodeService<AdjacencyList> 
         List<AdjacencyList> subNodes = queryChildren(parentId);
         while (CollectionUtils.isNotEmpty(subNodes)) {
             res.addAll(subNodes);
-            List<Long> parentIds = subNodes.stream().map(AdjacencyList::getPid).collect(Collectors.toList());
+            List<Long> parentIds = subNodes.stream().map(AdjacencyList::getNodeId).collect(Collectors.toList());
             subNodes = adjacencyListMapper.selectList(Wrappers.lambdaQuery(AdjacencyList.class)
                     .in(AdjacencyList::getPid, parentIds)
             );
@@ -73,7 +70,7 @@ public class AdjacencyListServiceImpl implements TreeNodeService<AdjacencyList> 
         });
         if (!pids.isEmpty()) {
             res = adjacencyListMapper.selectList(Wrappers.lambdaQuery(AdjacencyList.class)
-                    .eq(AdjacencyList::getNodeId, pids)
+                    .in(AdjacencyList::getNodeId, pids)
             );
         }
         return res;
@@ -86,6 +83,7 @@ public class AdjacencyListServiceImpl implements TreeNodeService<AdjacencyList> 
         if (parents == null) {
             return Collections.EMPTY_LIST;
         }
+        Set<String> hasAdd=new HashSet<>();
         res.addAll(parents);
         List<AdjacencyList> points = parents;
         while (CollectionUtils.isNotEmpty(points)) {
@@ -93,8 +91,12 @@ public class AdjacencyListServiceImpl implements TreeNodeService<AdjacencyList> 
             for (AdjacencyList point : points) {
                 List<AdjacencyList> p = queryParents(point.getNodeId());
                 if (p != null) {
-                    res.addAll(p);
-                    curLevel.addAll(p);
+                    for (AdjacencyList adjacencyList : p) {
+                        if(hasAdd.add(adjacencyList.getUniqueKey())){
+                            res.add(adjacencyList);
+                            curLevel.add(adjacencyList);
+                        }
+                    }
                 }
             }
             points = curLevel;

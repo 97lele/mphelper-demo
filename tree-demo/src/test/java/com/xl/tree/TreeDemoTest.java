@@ -67,6 +67,20 @@ public class TreeDemoTest {
     @Test
     public void testAdjacencyList() {
         adjacencyListService.insertNodes(sampleData);
+        List<AdjacencyList> nestedSets = adjacencyListService.queryChildren(1L);
+        System.out.println("查询1的直接子节点");
+        nestedSets.forEach(System.out::println);
+        List<AdjacencyList> nestedSets1 = adjacencyListService.queryAllChildren(1L);
+        System.out.println("查询1的所有子节点");
+        nestedSets1.forEach(System.out::println);
+        List<AdjacencyList> parent1 = adjacencyListService.queryParents(6L);
+        System.out.println("查询6的直接父节点");
+        parent1.forEach(System.out::println);
+        List<AdjacencyList> parent2 = adjacencyListService.queryAllParents(6L);
+        System.out.println("查询6的所有父节点");
+        parent2.forEach(System.out::println);
+        adjacencyListService.removeNodes(AdjacencyList.build(0L, 0L, null));
+        adjacencyListService.removeNodes(AdjacencyList.build(10L, 10L, null));
     }
     /**
      * *              0               10
