@@ -30,8 +30,11 @@ import static org.apache.ibatis.reflection.SystemMetaObject.DEFAULT_OBJECT_WRAPP
 @Component
 @Slf4j
 @Intercepts(
-        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class}
-        ))
+        {@Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class}
+        ),
+                @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}
+                )
+        })
 @ConditionalOnExpression("${mphelper.shard-support:false}")
 public class TableShardQueryInterceptor implements Interceptor {
 
