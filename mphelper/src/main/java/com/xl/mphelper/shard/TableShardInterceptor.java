@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xl.mphelper.annonations.TableShardIgnore;
+import com.xl.mphelper.dynamic.DynamicDataSourceHolder;
 import com.xl.mphelper.util.ApplicationContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -202,7 +203,7 @@ public class TableShardInterceptor implements Interceptor {
             Class<? extends ITableShardDbType> shardDb = annotation.dbType();
             ITableShardDbType iTableShardDb = SHARD_DB.computeIfAbsent(shardDb, e -> (ITableShardDbType) getObjectByClass(shardDb));
             //如果没有检查sql,默认已经建表
-            String checkTableSQL = iTableShardDb.getCheckTableSQL(curTableValues);
+            String checkTableSQL = iTableShardDb.getCheckTableSQL(curTableValues, conn);
             boolean contains = existsTable(conn, curTableValues, checkTableSQL);
             if (contains) {
                 conn.setAutoCommit(preAutoCommitState);
