@@ -56,7 +56,7 @@ public interface ITableShardStrategy<T> {
                 hashKey=entity.toString();
             }
             if(hashKey==null&&entity!=null){
-                hashKey= JSONUtils.toJSONString(entity);
+                hashKey= entity.hashCode()+"";
             }
             if(hashKey==null){
                 throw new IllegalStateException("can not generate hashKey in current param:"+entity);
