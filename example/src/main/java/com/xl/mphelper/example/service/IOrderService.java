@@ -20,4 +20,8 @@ public interface IOrderService {
     Page<OrderInfo> queryByPage(String month);
 
     void testSaveBatchPlus();
+
+    Page<OrderInfo> queryAll();
+
+    List<OrderInfo> queryAllList();
 }

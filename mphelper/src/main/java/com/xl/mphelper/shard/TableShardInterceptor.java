@@ -7,7 +7,6 @@ import com.alibaba.druid.sql.visitor.SchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xl.mphelper.annonations.TableShardIgnore;
-import com.xl.mphelper.dynamic.DynamicDataSourceHolder;
 import com.xl.mphelper.util.ApplicationContextHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -18,15 +17,10 @@ import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.mapping.StatementType;
 import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.reflection.DefaultReflectorFactory;
 import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.ReflectorFactory;
-import org.apache.ibatis.reflection.factory.DefaultObjectFactory;
-import org.apache.ibatis.reflection.factory.ObjectFactory;
-import org.apache.ibatis.reflection.wrapper.DefaultObjectWrapperFactory;
-import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 import org.apache.ibatis.session.Configuration;
 import com.xl.mphelper.annonations.TableShard;
 import com.xl.mphelper.annonations.TableShardParam;
@@ -38,13 +32,13 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+
+import static org.apache.ibatis.reflection.SystemMetaObject.DEFAULT_OBJECT_FACTORY;
+import static org.apache.ibatis.reflection.SystemMetaObject.DEFAULT_OBJECT_WRAPPER_FACTORY;
 
 /**
  * @author tanjl11
@@ -52,16 +46,13 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * 默认不加载这个bean
  */
 @Slf4j
-@Intercepts({@Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class})})
+@Intercepts({@Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class})}
+)
 @Component
 @ConditionalOnExpression("${mphelper.shard-support:false}")
 public class TableShardInterceptor implements Interceptor {
-    /**
-     * 用于构造metaObject
-     */
-    private static final ObjectFactory DEFAULT_OBJECT_FACTORY = new DefaultObjectFactory();
-    private static final ObjectWrapperFactory DEFAULT_OBJECT_WRAPPER_FACTORY = new DefaultObjectWrapperFactory();
-    private static final ReflectorFactory REFLECTOR_FACTORY = new DefaultReflectorFactory();
+    protected static final ReflectorFactory REFLECTOR_FACTORY = new DefaultReflectorFactory();
+
     /**
      * mapper缓存类
      */
@@ -81,7 +72,7 @@ public class TableShardInterceptor implements Interceptor {
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
-        if (TableShardHolder.isIgnore()) {
+        if (TableShardHolder.isIgnore()||TableShardHolder.hasQueryTableShard()) {
             return invocation.proceed();
         }
         RoutingStatementHandler statementHandler = (RoutingStatementHandler) invocation.getTarget();
@@ -253,7 +244,7 @@ public class TableShardInterceptor implements Interceptor {
         return false;
     }
 
-    private Class<? extends BaseMapper> getMapperClass(MappedStatement mappedStatement) {
+    protected static Class<? extends BaseMapper> getMapperClass(MappedStatement mappedStatement) {
         String id = mappedStatement.getId();
         //mapperClass
         String className = id.substring(0, id.lastIndexOf("."));
@@ -275,7 +266,7 @@ public class TableShardInterceptor implements Interceptor {
         return execMethod.genMethodInfo(methods, methodName);
     }
 
-    private Set<String> getTableNames(BoundSql boundSql, TableShard shard) {
+    protected static Set<String> getTableNames(BoundSql boundSql, TableShard shard) {
         Class<? extends ITableShardDbType> shardDb = shard.dbType();
         ITableShardDbType iTableShardDb = SHARD_DB.computeIfAbsent(shardDb, e -> (ITableShardDbType) getObjectByClass(shardDb));
         //获取sql语句
@@ -352,7 +343,7 @@ public class TableShardInterceptor implements Interceptor {
     }
 
 
-    private Object getObjectByClass(Class<?> invokeClass) {
+    protected static Object getObjectByClass(Class<?> invokeClass) {
         return ApplicationContextHolder.getBeanOrInstance(invokeClass);
     }
 

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xl.mphelper.example.controller.OrderController;
 import com.xl.mphelper.example.entity.OrderInfo;
 import com.xl.mphelper.example.service.IOrderService;
+import com.xl.mphelper.shard.TableShardHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -22,7 +23,7 @@ import java.util.List;
 public class MpHelperApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext run = SpringApplication.run(MpHelperApplication.class, args);
-        OrderController controller = run.getBean(OrderController.class);
+       /* OrderController controller = run.getBean(OrderController.class);
         //测试mapper的新增方法方法
         List<OrderInfo> orderInfos = controller.testAdd();
         String suffix = orderInfos.get(0).suffix();
@@ -30,10 +31,15 @@ public class MpHelperApplication {
         Page<OrderInfo> orderInfoPage = controller.queryByPage(suffix);
         log.info("分页查询，长度：{}", orderInfoPage.getRecords().size());
         List<OrderInfo> query = controller.query(suffix);
-        log.info("查询所有，长度：{}", query.size());
+        log.info("查询所有，长度：{}", query.size());*/
         IOrderService service = run.getBean(IOrderService.class);
+        TableShardHolder.putQueryTableShard("2021_9","2022_1","2021_10","2021_11");
+        Page<OrderInfo> page = service.queryAll();
+        System.out.println(page.getRecords());
+        List<OrderInfo> infos = service.queryAllList();
+        System.out.println(infos);
         //自定义service的crud操作
-        service.testCustomServiceShardCUD();
+//        service.testCustomServiceShardCUD();
 
     }
 }

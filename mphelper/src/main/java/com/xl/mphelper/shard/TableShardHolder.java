@@ -3,8 +3,7 @@ package com.xl.mphelper.shard;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.xl.mphelper.util.ApplicationContextHolder;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author tanjl11
@@ -14,6 +13,7 @@ import java.util.Map;
  */
 public class TableShardHolder {
     protected static ThreadLocal<Map<String, Object>> HOLDER = ThreadLocal.withInitial(HashMap::new);
+    protected static ThreadLocal<Set<String>> QUERY_HOLDER = ThreadLocal.withInitial(HashSet::new);
     private static String IGNORE_FLAG = "##ignore@@";
     private static String HASH_LENGTH = "##hash_length@@";
 
@@ -23,7 +23,7 @@ public class TableShardHolder {
             TableName tableName = (TableName) entityClazz.getAnnotation(TableName.class);
             String value = tableName.value();
             if (value.equals(IGNORE_FLAG) || value.equals(HASH_LENGTH)) {
-                throw new IllegalStateException("conflict with ignore flag,try another table name");
+                throw new IllegalStateException("conflict with exists flags,try another table name");
             }
             //hash策略处理
             String res = value + "_" + suffix;
@@ -81,5 +81,35 @@ public class TableShardHolder {
 
     public static void clearHashTableLength() {
         HOLDER.get().remove(HASH_LENGTH);
+    }
+
+    public static void putQueryTableShard(String... suffix) {
+        Set<String> strings = QUERY_HOLDER.get();
+        for (String s : suffix) {
+            strings.add(s);
+        }
+        QUERY_HOLDER.set(strings);
+    }
+
+    public static void putQueryTableShard(Collection<String> suffix) {
+        Set<String> strings = QUERY_HOLDER.get();
+        strings.addAll(suffix);
+        QUERY_HOLDER.set(strings);
+    }
+
+    public static boolean hasQueryTableShard() {
+        return !QUERY_HOLDER.get().isEmpty();
+    }
+
+    public static void clearQueryTableShard() {
+        QUERY_HOLDER.remove();
+    }
+
+    public static void removeQueryTableShard(String key) {
+        QUERY_HOLDER.get().remove(key);
+    }
+
+    protected static Set<String> getSuffix() {
+        return QUERY_HOLDER.get();
     }
 }

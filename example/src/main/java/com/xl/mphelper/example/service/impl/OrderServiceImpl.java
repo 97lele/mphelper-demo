@@ -71,6 +71,17 @@ public class OrderServiceImpl extends CustomServiceImpl<OrderInfoMapper, OrderIn
     }
 
     @Override
+    public Page<OrderInfo> queryAll() {
+        Page<OrderInfo> page = new Page<>(2,2);
+        return orderInfoMapper.selectPage(page, null);
+    }
+
+    @Override
+    public List<OrderInfo> queryAllList() {
+        return orderInfoMapper.selectList(null);
+    }
+
+    @Override
     public void testCustomServiceShardCUD() {
         List<OrderInfo> orderInfos = OrderInfo.batchRandomData();
         List<OrderDetail> detailList = new ArrayList<>();
