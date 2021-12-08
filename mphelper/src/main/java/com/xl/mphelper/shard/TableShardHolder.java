@@ -13,16 +13,16 @@ import java.util.*;
  */
 public class TableShardHolder {
     protected static ThreadLocal<Map<String, Object>> HOLDER = ThreadLocal.withInitial(HashMap::new);
-    protected static ThreadLocal<Set<String>> QUERY_HOLDER = ThreadLocal.withInitial(HashSet::new);
     private static String IGNORE_FLAG = "##ignore@@";
     private static String HASH_LENGTH = "##hash_length@@";
+    private static String QUERY_FLAG = "##query@@";
 
     //默认以_拼接
     public static void putVal(Class entityClazz, String suffix) {
         if (entityClazz.isAnnotationPresent(TableName.class)) {
             TableName tableName = (TableName) entityClazz.getAnnotation(TableName.class);
             String value = tableName.value();
-            if (value.equals(IGNORE_FLAG) || value.equals(HASH_LENGTH)) {
+            if (value.equals(IGNORE_FLAG) || value.equals(HASH_LENGTH)||value.equals(QUERY_FLAG)) {
                 throw new IllegalStateException("conflict with exists flags,try another table name");
             }
             //hash策略处理
@@ -84,32 +84,37 @@ public class TableShardHolder {
     }
 
     public static void putQueryTableShard(String... suffix) {
-        Set<String> strings = QUERY_HOLDER.get();
-        for (String s : suffix) {
-            strings.add(s);
+        Map<String, Object> map = HOLDER.get();
+        Set<String> query_flag = (Set<String>) map.get(QUERY_FLAG);
+        if (query_flag == null) {
+            query_flag = new HashSet<>();
         }
-        QUERY_HOLDER.set(strings);
+        for (String s : suffix) {
+            query_flag.add(s);
+        }
+        map.put(QUERY_FLAG, query_flag);
     }
 
     public static void putQueryTableShard(Collection<String> suffix) {
-        Set<String> strings = QUERY_HOLDER.get();
-        strings.addAll(suffix);
-        QUERY_HOLDER.set(strings);
+
+        Map<String, Object> map = HOLDER.get();
+        Set<String> query_flag = (Set<String>) map.get(QUERY_FLAG);
+        if (query_flag == null) {
+            query_flag = new HashSet<>();
+        }
+        query_flag.addAll(suffix);
+        map.put(QUERY_FLAG, query_flag);
     }
 
     public static boolean hasQueryTableShard() {
-        return !QUERY_HOLDER.get().isEmpty();
+        return HOLDER.get().containsKey(QUERY_FLAG);
     }
 
     public static void clearQueryTableShard() {
-        QUERY_HOLDER.remove();
-    }
-
-    public static void removeQueryTableShard(String key) {
-        QUERY_HOLDER.get().remove(key);
+        HOLDER.get().remove(QUERY_FLAG);
     }
 
     protected static Set<String> getSuffix() {
-        return QUERY_HOLDER.get();
+        return (Set<String>) HOLDER.get().get(QUERY_FLAG);
     }
 }
