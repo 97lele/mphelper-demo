@@ -33,6 +33,9 @@ public class SelectByComposeKeys extends AbstractMethod {
         StringBuilder builder=new StringBuilder();
         for (int i = 0; i < composeKeys.size(); i++) {
             TableFieldInfo composeKey = composeKeys.get(i);
+            if (!composeKey.getColumn().equals(composeKey.getProperty())) {
+                builder.append(" AS ").append(composeKey.getProperty());
+            }
             builder.append(composeKey.getColumn()).append(EQUALS).append(SqlScriptUtils.safeParam(SQLConditionWrapper.ITEM + DOT + composeKey.getProperty()));
             if(i!=composeKeys.size()-1){
                 builder.append(" ").append(AND).append(" ");

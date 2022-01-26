@@ -50,6 +50,7 @@ public class NestedSetServiceImpl implements TreeNodeService<NestedSet> {
             TreeNode.build(root, lists, null, (p, s) -> {
                 s.setFullPath(p.getFullPath() + "|" + s.getNodeId());
                 s.setLevel(p.getLevel() + 1);
+                return true;
             }, true);
             AtomicLong i = new AtomicLong(0);
             TreeNode.foreachInDFS(root, e -> {

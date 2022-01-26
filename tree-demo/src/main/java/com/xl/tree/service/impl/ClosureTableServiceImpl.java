@@ -58,6 +58,7 @@ public class ClosureTableServiceImpl implements TreeNodeService<ClosureTable> {
             TreeNode.build(root, lists, null, (p, s) -> {
                 s.setFullPath(p.getFullPath() + "|" + s.getNodeId());
                 s.setLevel(p.getLevel() + 1);
+                return true;
             }, true);
             TreeNode.foreachInBfs(e -> {
                 //判断之前有没有走过这个节点

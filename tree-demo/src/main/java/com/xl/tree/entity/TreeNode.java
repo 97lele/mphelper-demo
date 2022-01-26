@@ -60,10 +60,10 @@ public interface TreeNode<T extends TreeNode<T>> {
     /**
      * 构造树
      *
-     * @param cur
-     * @param candidates
-     * @param sonFilter
-     * @param together
+     * @param cur 当前处理节点
+     * @param candidates 候选节点
+     * @param sonFilter 过滤条件
+     * @param together 父类和字类
      * @param <T>
      * @return
      */
@@ -76,6 +76,7 @@ public interface TreeNode<T extends TreeNode<T>> {
         }
         List<T> son = new ArrayList<>();
         for (T candidate : candidates) {
+           //候选的父id=当前处理的节点id
             if (candidate.getTreePid().equals(cur.getTreeId())) {
                 T point = candidate;
                 if (needClone) {
@@ -87,9 +88,11 @@ public interface TreeNode<T extends TreeNode<T>> {
                 }
                 if (pass) {
                     if (together != null) {
-                        together.accept(cur, point);
+                        pass=together.accept(cur, point);
                     }
-                    son.add(build(point, candidates, sonFilter, together, needClone));
+                    if(pass){
+                        son.add(build(point, candidates, sonFilter, together, needClone));
+                    }
                 }
             }
         }
@@ -315,7 +318,7 @@ public interface TreeNode<T extends TreeNode<T>> {
          * @param parent
          * @param son
          */
-        void accept(P parent, S son);
+        boolean accept(P parent, S son);
     }
 
     static class DemoNode implements TreeNode<DemoNode> {

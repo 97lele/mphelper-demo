@@ -60,6 +60,7 @@ public class PathNodeServiceImpl implements TreeNodeService<PathNode> {
                         .content(s.getContent())
                         .build();
                 nodes.add(value);
+                return true;
             });
         }
         pathNodeMapper.insertBatch(nodes);
